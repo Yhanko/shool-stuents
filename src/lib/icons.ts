@@ -45,7 +45,8 @@ import {
     Save,
     Link, 
     Gamepad2,
-    FileText
+    FileText,
+    Loader2
 } from 'lucide-react';
 
 export {
@@ -95,5 +96,6 @@ export {
     Save,
     Link, 
     Gamepad2,
-    FileText
+    FileText,
+    Loader2
 }

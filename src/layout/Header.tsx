@@ -9,30 +9,26 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { User, LogOut, Settings } from '../lib/icons';
-
-export interface Aluno {
-  id: string;
-  nome: string;
-  telefone: string;
-  email: string;
-  avatar?: string;
-}
-
-export const aluno: Aluno = {
-  id: '1',
-  nome: 'Romenia Cajamba',
-  telefone: '+244 923 456 789',
-  email: 'ana.santos@email.com',
-  avatar: 'https://images.pexels.com/photos/3769021/pexels-photo-3769021.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop',
-}
+import { useStudent } from '@/contexts/StudentContext';
+import { useAuthStore } from '@/store/authStore';
+import { useNavigate } from 'react-router-dom';
 
 export function Header() {
+  const { student } = useStudent();
+  const logout = useAuthStore(state => state.logout);
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
+
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4 w-full">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-semibold text-gray-900">
-            Bem-vindo, {aluno.nome}!
+            Bem-vindo, {student.name}!
           </h2>
           <p className="text-sm text-gray-600">
             {new Date().toLocaleDateString('pt-BR', { 
@@ -50,9 +46,9 @@ export function Header() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                 <Avatar className="h-10 w-10">
-                  <AvatarImage src={aluno.avatar} alt={aluno.nome} />
+                  <AvatarImage src={student.avatar} alt={student.name} />
                   <AvatarFallback>
-                    {aluno.nome.split(' ').map(n => n[0]).join('')}
+                    {student.name ? student.name.split(' ').map(n => n[0]).join('').substring(0, 2) : 'A'}
                   </AvatarFallback>
                 </Avatar>
               </Button>
@@ -60,9 +56,9 @@ export function Header() {
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">{aluno.nome}</p>
+                  <p className="text-sm font-medium leading-none">{student.name}</p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    {aluno.email}
+                    {student.email}
                   </p>
                 </div>
               </DropdownMenuLabel>
@@ -76,7 +72,7 @@ export function Header() {
                 <span>Configurações</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50">
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Sair</span>
               </DropdownMenuItem>
