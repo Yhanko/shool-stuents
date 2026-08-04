@@ -12,9 +12,15 @@ export function GradesView() {
   const [selectedSubject, setSelectedSubject] = useState<string>('all');
   const [selectedPeriod, setSelectedPeriod] = useState<string>('all');
 
+  const periodMap: Record<string, string[]> = {
+    '1º Período': ['1', 'first'],
+    '2º Período': ['2', 'second'],
+    '3º Período': ['3', 'third']
+  };
+
   const filteredGrades = grades.filter(grade => {
     const subjectMatch = selectedSubject === 'all' || grade.subject === selectedSubject;
-    const periodMatch = selectedPeriod === 'all' || grade.period === selectedPeriod;
+    const periodMatch = selectedPeriod === 'all' || periodMap[selectedPeriod]?.includes(String(grade.period).toLowerCase());
     return subjectMatch && periodMatch;
   });
 
@@ -28,9 +34,15 @@ export function GradesView() {
 
   const getGradeBadgeVariant = (grade: number, maxGrade: number) => {
     const percentage = (grade / maxGrade) * 100;
-    if (percentage >= 70) return 'success' as const;
+    if (percentage >= 70) return 'default' as const;
     if (percentage >= 50) return 'secondary' as const;
     return 'destructive' as const;
+  };
+
+  const getGradeBadgeClassName = (grade: number, maxGrade: number) => {
+    const percentage = (grade / maxGrade) * 100;
+    if (percentage >= 70) return 'bg-green-500 hover:bg-green-600 text-white';
+    return '';
   };
 
   const averageGrade = filteredGrades.length > 0 
@@ -134,7 +146,7 @@ export function GradesView() {
       {/* Grades by Subject */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {subjects.map(subject => {
-          const subjectGrades = grades.filter(g => g.subject === subject.name);
+          const subjectGrades = filteredGrades.filter(g => g.subject === subject.name);
           const subjectAverage = subjectGrades.length > 0 
             ? subjectGrades.reduce((acc, grade) => acc + grade.grade, 0) / subjectGrades.length 
             : 0;
@@ -146,11 +158,14 @@ export function GradesView() {
                   <div className="flex items-center gap-3">
                     <div 
                       className="w-4 h-4 rounded-full"
-                      style={{ backgroundColor: subject.color }}
+                      style={{ backgroundColor: subject.color || '#3B82F6' }}
                     />
                     <span>{subject.name}</span>
                   </div>
-                  <Badge variant={subjectAverage >= 14 ? 'success' : subjectAverage >= 10 ? 'secondary' : 'destructive'}>
+                  <Badge 
+                    variant={subjectAverage >= 14 ? 'default' : subjectAverage >= 10 ? 'secondary' : 'destructive'}
+                    className={subjectAverage >= 14 ? 'bg-green-500 hover:bg-green-600 text-white' : ''}
+                  >
                     Média: {subjectAverage.toFixed(1)}
                   </Badge>
                 </CardTitle>
@@ -170,9 +185,12 @@ export function GradesView() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <Badge variant={getGradeBadgeVariant(grade.grade, grade.maxGrade)}>
-                          {grade.grade}/{grade.maxGrade}
-                        </Badge>
+                      <Badge 
+                        variant={getGradeBadgeVariant(grade.grade, grade.maxGrade)}
+                        className={getGradeBadgeClassName(grade.grade, grade.maxGrade)}
+                      >
+                        {grade.grade}/{grade.maxGrade}
+                      </Badge>
                         <p className="text-xs text-gray-500 mt-1">
                           {((grade.grade / grade.maxGrade) * 100).toFixed(0)}%
                         </p>
@@ -215,7 +233,10 @@ export function GradesView() {
                           {format(new Date(grade.date), 'dd MMM, yyyy', { locale: ptBR })}
                         </p>
                       </div>
-                      <Badge variant={getGradeBadgeVariant(grade.grade, grade.maxGrade)}>
+                      <Badge 
+                        variant={getGradeBadgeVariant(grade.grade, grade.maxGrade)}
+                        className={getGradeBadgeClassName(grade.grade, grade.maxGrade)}
+                      >
                         {grade.grade}/{grade.maxGrade}
                       </Badge>
                     </div>

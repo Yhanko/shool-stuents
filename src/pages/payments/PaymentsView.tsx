@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,15 +7,27 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useStudent } from '@/contexts/StudentContext';
 import { CreditCard, Download, Search, AlertTriangle, CheckCircle, Clock, Calendar, Receipt, Coins } from '../../lib/icons';
+import { studentService } from '@/services/api/studentService';
+import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export function PaymentsView() {
-  const { payments } = useStudent();
+  const { payments: contextPayments, student } = useStudent();
+  const [payments, setPayments] = useState(contextPayments);
+  const iban = (student as any)?.institution?.iban || "Não configurado pela instituição";
+  
+  // Sync with context
+  useEffect(() => {
+    setPayments(contextPayments);
+  }, [contextPayments]);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
   const [metodoPagamento, setMetodoPagamento] = useState('');
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const filteredPayments = payments.filter(payment => {
     const searchMatch = payment.description.toLowerCase().includes(searchTerm.toLowerCase());
@@ -39,6 +51,8 @@ export function PaymentsView() {
     switch (status) {
       case 'paid':
         return <CheckCircle className="w-4 h-4 text-green-600" />;
+      case 'processing':
+        return <Clock className="w-4 h-4 text-blue-600" />;
       case 'pending':
         return <Clock className="w-4 h-4 text-orange-600" />;
       case 'overdue':
@@ -49,12 +63,13 @@ export function PaymentsView() {
   };
 
   const getStatusBadge = (status: string, dueDate: string) => {
-    if (status === 'paid') return <Badge variant="success">Pago</Badge>;
+    if (status === 'paid') return <Badge variant="default" className="bg-green-500 hover:bg-green-600 text-white">Pago</Badge>;
+    if (status === 'processing') return <Badge variant="secondary" className="bg-blue-100 text-blue-800">Em Validação</Badge>;
     if (status === 'pending' && new Date(dueDate) < new Date()) {
       return <Badge variant="destructive">Em Atraso</Badge>;
     }
     if (status === 'pending') return <Badge variant="secondary">Pendente</Badge>;
-    return <Badge variant="secondary">{status}</Badge>;
+    return <Badge variant="outline">{status}</Badge>;
   };
 
   const getPaymentTypeLabel = (type: string) => {
@@ -69,6 +84,43 @@ export function PaymentsView() {
         return 'Transporte';
       default:
         return type;
+    }
+  };
+
+  const handlePaymentSubmit = async (paymentId: string) => {
+    if (!metodoPagamento) {
+      toast.error('Selecione um método de pagamento');
+      return;
+    }
+    if (!proofFile && (metodoPagamento === 'transferencia' || metodoPagamento === 'multicaixa')) {
+      toast.error('Anexe o comprovativo de pagamento');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      let fileUrl = '';
+      if (proofFile) {
+        const uploadRes = await studentService.uploadFile(proofFile);
+        fileUrl = uploadRes.path || uploadRes.url || '';
+      }
+      
+      // Chamar a API verdadeira para enviar comprovativo
+      await studentService.submitPaymentProof(paymentId, fileUrl, metodoPagamento);
+      
+      toast.success('Comprovativo enviado! Aguarde a confirmação da secretaria.');
+      setSelectedPayment(null);
+      setProofFile(null);
+      
+      // Atualizar o state local para refletir que está em processamento
+      setPayments(prev => prev.map(p => 
+        p.id === paymentId ? { ...p, status: 'processing', proofUrl: fileUrl, paymentMethod: metodoPagamento } : p
+      ));
+
+    } catch (error) {
+      toast.error('Erro ao enviar o pagamento.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -278,10 +330,10 @@ export function PaymentsView() {
                                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                                   <h4 className="font-medium text-blue-800 mb-2">Pagamento via Multicaixa</h4>
                                   <p className="text-sm text-blue-700 mb-3">
-                                      Use o código abaixo no seu Multicaixa Express:
+                                      Transfira o valor para o IBAN da Instituição:
                                   </p>
                                   <div className="bg-white p-3 rounded border text-center">
-                                    <span className="font-mono text-lg font-bold">MC- 7437834743764</span>
+                                    <span className="font-mono text-lg font-bold">{iban}</span>
                                   </div>
                                   </div>
                                 )}
@@ -290,18 +342,32 @@ export function PaymentsView() {
                                   <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
                                     <h4 className="font-medium text-green-800 mb-2">Dados para Transferência</h4>
                                     <div className="space-y-2 text-sm">
-                                      <div><strong>Banco:</strong> BAI</div>
-                                      <div><strong>IBAN:</strong> AO06 0040 0000 1234 5678 1011 2</div>
-                                      <div><strong>Titular:</strong> Escola Internacional de Luanda</div>
-                                      <div><strong>Referência:</strong>273632382</div>
+                                      <div><strong>IBAN da Instituição:</strong> {iban}</div>
+                                      <div className="text-gray-600 italic">Por favor, faça a transferência para este IBAN e anexe o comprovativo abaixo.</div>
                                     </div>
                                   </div>
                                 )}
+                                
+                                <div className="space-y-2">
+                                  <label className="text-sm font-medium text-gray-700">Comprovativo (PDF/Imagem)</label>
+                                  <div className="flex items-center gap-2">
+                                    <Input 
+                                      type="file" 
+                                      accept=".pdf,image/*" 
+                                      onChange={(e) => setProofFile(e.target.files?.[0] || null)}
+                                    />
+                                  </div>
+                                </div>
+
                                 <div className="flex gap-3">
-                                  <Button className="flex-1 bg-green-500 hover:bg-green-600" disabled={!metodoPagamento}>
-                                    Confirmar Pagamento
+                                  <Button 
+                                    className="flex-1 bg-green-500 hover:bg-green-600" 
+                                    disabled={!metodoPagamento || isSubmitting}
+                                    onClick={() => handlePaymentSubmit(payment.id)}
+                                  >
+                                    {isSubmitting ? 'A Enviar...' : 'Confirmar Pagamento'}
                                   </Button>
-                                  <Button variant="outline">
+                                  <Button variant="outline" onClick={() => setSelectedPayment(null)}>
                                     Cancelar
                                   </Button>
                                 </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useStudent } from '@/contexts/StudentContext';
 import { Bot, Send, Lightbulb, BookOpen, TrendingDown, Star } from '../../lib/icons';
+import { studentService } from '@/services/api/studentService';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -18,7 +19,7 @@ interface AIMessage {
 }
 
 export function AITutorView() {
-  const { subjects, grades } = useStudent();
+  const { student, subjects, grades } = useStudent();
   const [messages, setMessages] = useState<AIMessage[]>([
     {
       id: '1',
@@ -31,16 +32,49 @@ export function AITutorView() {
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [isTyping, setIsTyping] = useState(false);
 
-  // Identificar disciplinas com desempenho mais baixo
-  const subjectPerformance = subjects.map(subject => {
-    const subjectGrades = grades.filter(g => g.subject === subject.name);
-    const average = subjectGrades.length > 0 
-      ? subjectGrades.reduce((acc, grade) => acc + grade.grade, 0) / subjectGrades.length 
-      : 0;
-    return { ...subject, average };
-  }).sort((a, b) => a.average - b.average);
+  const [aiAnalysis, setAiAnalysis] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [quickQuestions, setQuickQuestions] = useState<{texto: string, categoria: string}[]>([]);
 
-  const weakSubjects = subjectPerformance.filter(s => s.average < 14);
+  useEffect(() => {
+    const fetchAnalysis = async () => {
+      try {
+        setIsLoading(true);
+        const data = await studentService.getAiAnalysis(student.id);
+        setAiAnalysis(data);
+        
+        // Atualizar primeira mensagem baseada na análise
+        setMessages([
+          {
+            id: '1',
+            type: 'ai',
+            content: data.summary,
+            timestamp: new Date().toISOString()
+          }
+        ]);
+      } catch (error) {
+        console.error('Erro ao buscar análise:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    const fetchSuggestions = async () => {
+      try {
+        const suggestions = await studentService.getAiSuggestions();
+        setQuickQuestions(suggestions);
+      } catch (error) {
+        console.error('Erro ao buscar sugestões:', error);
+      }
+    };
+
+    fetchAnalysis();
+    fetchSuggestions();
+  }, [student.id]);
+
+  // Identificar disciplinas com desempenho mais baixo
+  const weakSubjects = aiAnalysis?.weaknesses || [];
+  const strongSubjects = aiAnalysis?.strengths || [];
 
   const handleSendMessage = async () => {
     if (!currentMessage.trim()) return;
@@ -57,48 +91,39 @@ export function AITutorView() {
     setCurrentMessage('');
     setIsTyping(true);
 
-    // Simular resposta da IA
-    setTimeout(() => {
-      const aiResponse = generateAIResponse(currentMessage, selectedSubject);
+    // Enviar mensagem real para o backend
+    try {
+      // O backend espera { question, studentId }
+      // Passamos o selectedSubject na string da pergunta caso haja algum
+      const questionToSend = selectedSubject 
+        ? `[Sobre ${selectedSubject}] ${currentMessage}` 
+        : currentMessage;
+        
+      const response = await studentService.chatWithAi(questionToSend, student.id);
+      
       const aiMessage: AIMessage = {
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: aiResponse,
+        content: response.resposta || 'Não consegui obter uma resposta neste momento.',
         timestamp: new Date().toISOString(),
         subject: selectedSubject || undefined
       };
       
       setMessages(prev => [...prev, aiMessage]);
+    } catch (error) {
+      console.error('Erro ao comunicar com a IA', error);
+      const errorMessage: AIMessage = {
+        id: (Date.now() + 1).toString(),
+        type: 'ai',
+        content: 'Desculpe, ocorreu um erro ao contactar o servidor. Tente novamente mais tarde.',
+        timestamp: new Date().toISOString(),
+        subject: selectedSubject || undefined
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setIsTyping(false);
-    }, 2000);
+    }
   };
-
-  const generateAIResponse = (question: string, subject?: string) => {
-    const responses = [
-      `Excelente pergunta sobre ${subject || 'este tópico'}! Vou explicar de forma simples e clara.`,
-      `Com base no seu desempenho em ${subject || 'esta disciplina'}, recomendo que foque nestes pontos principais:`,
-      `Entendo a sua dúvida. Vamos resolver isso passo a passo:`,
-      `Esta é uma área importante! Deixe-me ajudar com uma explicação detalhada:`,
-    ];
-    
-    return responses[Math.floor(Math.random() * responses.length)] + ` 
-
-Para ${subject || 'esta matéria'}, sugiro:
-1. Revisar os conceitos básicos primeiro
-2. Praticar exercícios semelhantes 
-3. Fazer resumos dos pontos principais
-4. Agendar uma sessão de revisão comigo
-
-Precisa de mais esclarecimentos sobre algum ponto específico?`;
-  };
-
-  const quickQuestions = [
-    "Como posso melhorar em Matemática?",
-    "Explica-me as derivadas",
-    "Dicas de estudo para Física",
-    "Como organizar o meu tempo de estudo?",
-    "Exercícios para praticar"
-  ];
 
   return (
     <div className="space-y-6">
@@ -123,14 +148,15 @@ Precisa de mais esclarecimentos sobre algum ponto específico?`;
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {weakSubjects.length > 0 ? (
-                weakSubjects.map(subject => (
-                  <div key={subject.id} className="p-3 bg-orange-50 rounded-lg border border-orange-200">
+              {isLoading ? (
+                <p className="text-sm text-gray-500 text-center py-4">Analisando desempenho...</p>
+              ) : weakSubjects.length > 0 ? (
+                weakSubjects.map((subject: string, idx: number) => (
+                  <div key={idx} className="p-3 bg-orange-50 rounded-lg border border-orange-200">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="font-medium text-orange-900">{subject.name}</span>
-                      <Badge variant="secondary">{subject.average.toFixed(1)}</Badge>
+                      <span className="font-medium text-orange-900">{subject}</span>
+                      <Badge variant="secondary">Atenção</Badge>
                     </div>
-                    <p className="text-sm text-orange-700">{subject.teacher}</p>
                   </div>
                 ))
               ) : (
@@ -151,17 +177,19 @@ Precisa de mais esclarecimentos sobre algum ponto específico?`;
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {quickQuestions.map((question, index) => (
+                {quickQuestions.length > 0 ? quickQuestions.map((question, index) => (
                   <Button
                     key={index}
                     variant="outline"
                     size="sm"
-                    className="w-full text-left justify-start h-auto p-2 text-xs"
-                    onClick={() => setCurrentMessage(question)}
+                    className="w-full text-left justify-start h-auto p-2 text-xs whitespace-normal"
+                    onClick={() => setCurrentMessage(question.texto)}
                   >
-                    {question}
+                    {question.texto}
                   </Button>
-                ))}
+                )) : (
+                  <p className="text-xs text-gray-500">Nenhuma sugestão disponível.</p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -210,7 +238,20 @@ Precisa de mais esclarecimentos sobre algum ponto específico?`;
                           <span className="text-xs font-medium">IA Tutora</span>
                         </div>
                       )}
-                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                      {message.type === 'user' ? (
+                        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                      ) : (
+                        <div 
+                          className="text-sm space-y-2 prose prose-sm max-w-none"
+                          dangerouslySetInnerHTML={{ 
+                            __html: message.content
+                              .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                              .replace(/\n\n/g, '<br/><br/>')
+                              .replace(/\n\* /g, '<br/>• ')
+                              .replace(/\n- /g, '<br/>• ')
+                          }} 
+                        />
+                      )}
                       <p className="text-xs opacity-70 mt-1">
                         {format(new Date(message.timestamp), 'HH:mm', { locale: ptBR })}
                       </p>
@@ -264,31 +305,35 @@ Precisa de mais esclarecimentos sobre algum ponto específico?`;
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <h4 className="font-medium text-blue-900 mb-2">Plano de Estudo Semanal</h4>
-                  <p className="text-sm text-blue-700 mb-3">
-                    Com base no seu desempenho, recomendo dedicar mais tempo a estas áreas:
-                  </p>
-                  <ul className="text-sm text-blue-800 space-y-1">
-                    {weakSubjects.slice(0, 3).map(subject => (
-                      <li key={subject.id}>• {subject.name} - 2h por semana</li>
-                    ))}
-                  </ul>
+              {isLoading ? (
+                <p className="text-sm text-gray-500 text-center py-4">A gerar recomendações...</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <h4 className="font-medium text-blue-900 mb-2">Recomendações da IA</h4>
+                    <p className="text-sm text-blue-700 mb-3">
+                      Sugestões baseadas no seu desempenho real:
+                    </p>
+                    <ul className="text-sm text-blue-800 space-y-2 list-disc list-inside">
+                      {aiAnalysis?.recommendations?.map((rec: string, idx: number) => (
+                        <li key={idx}>{rec}</li>
+                      )) || <li>Continue assim!</li>}
+                    </ul>
+                  </div>
+                  
+                  <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                    <h4 className="font-medium text-green-900 mb-2">Pontos Fortes</h4>
+                    <p className="text-sm text-green-700 mb-3">
+                      Disciplinas onde está a destacar-se:
+                    </p>
+                    <ul className="text-sm text-green-800 space-y-1">
+                      {strongSubjects.length > 0 ? strongSubjects.map((s: string, idx: number) => (
+                        <li key={idx}>• {s}</li>
+                      )) : <li>• Todas as disciplinas na média</li>}
+                    </ul>
+                  </div>
                 </div>
-                
-                <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                  <h4 className="font-medium text-green-900 mb-2">Técnicas de Estudo</h4>
-                  <p className="text-sm text-green-700 mb-3">
-                    Métodos recomendados para o seu perfil de aprendizagem:
-                  </p>
-                  <ul className="text-sm text-green-800 space-y-1">
-                    <li>• Técnica Pomodoro (25min focado)</li>
-                    <li>• Mapas mentais para revisão</li>
-                    <li>• Prática ativa com exercícios</li>
-                  </ul>
-                </div>
-              </div>
+              )}
             </CardContent>
           </Card>
         </div>

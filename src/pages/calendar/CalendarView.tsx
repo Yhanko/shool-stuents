@@ -1,18 +1,40 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useStudent } from '@/contexts/StudentContext';
 import { Calendar, Clock, MapPin, Users, BookOpen, Trophy, AlertTriangle } from '../../lib/icons';
+import { studentService } from '@/services/api/studentService';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, isSameMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export function CalendarView() {
-  const { events } = useStudent();
+  const [events, setEvents] = useState<any[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [filterType, setFilterType] = useState<string>('all');
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        setIsLoading(true);
+        const data = await studentService.getEvents();
+        // Add fake time properties if missing for UI
+        const eventsWithUiProps = data.map((e: any) => ({
+          ...e,
+          time: format(new Date(e.date), 'HH:mm'),
+        }));
+        setEvents(eventsWithUiProps);
+      } catch (error) {
+        console.error('Failed to load events:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchEvents();
+  }, []);
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
@@ -201,12 +223,12 @@ export function CalendarView() {
                                 <Clock className="w-3 h-3" />
                                 {event.time}
                               </div>
-                              {event.location && (
+                              {event.location ? (
                                 <div className="flex items-center gap-1">
                                   <MapPin className="w-3 h-3" />
                                   {event.location}
                                 </div>
-                              )}
+                              ) : null}
                             </div>
                           </div>
                         </div>
@@ -240,9 +262,9 @@ export function CalendarView() {
                       <p className="text-sm text-gray-600 mt-1">
                         {format(new Date(event.date), 'dd MMM', { locale: ptBR })} às {event.time}
                       </p>
-                      {event.location && (
+                      {event.location ? (
                         <p className="text-xs text-gray-500 mt-1">{event.location}</p>
-                      )}
+                      ) : null}
                     </div>
                     <Badge variant={event.type === 'exam' ? 'destructive' : 'secondary'}>
                       {event.type === 'exam' ? 'Prova' : 

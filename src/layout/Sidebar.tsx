@@ -39,11 +39,11 @@ const menuItems = [
 
 export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const { student, unreadMessages, unreadNotifications } = useStudent();
+  const { student, unreadMessages, unreadNotifications, clearUnreadMessages } = useStudent();
   const navigate = useNavigate();
   const getNotificationCount = (itemId: string) => {
-    if (itemId === 'messages') return unreadMessages;
-    if (itemId === 'notifications') return unreadNotifications;
+    if (itemId === 'chat') return unreadMessages;
+    if (itemId === 'notificacoes') return unreadNotifications;
     return 0;
   };
 
@@ -104,6 +104,9 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
                   )}
                   onClick={
                     () => {
+                      if (item.id === 'chat') {
+                        clearUnreadMessages();
+                      }
                       onPageChange(item.id);
                       navigate("/" + item.id)
                     }

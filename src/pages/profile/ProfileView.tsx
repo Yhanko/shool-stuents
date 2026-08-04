@@ -5,12 +5,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useStudent } from '@/contexts/StudentContext';
-import { User, Mail, Calendar, GraduationCap, Hash, Camera, Lock, Edit, Save, X } from '../../lib/icons';
+import { User, Mail, Calendar, GraduationCap, Hash, Camera, Lock, Edit, Save, X, Eye, EyeOff } from '../../lib/icons';
+import { studentService } from '@/services/api/studentService';
+import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export function ProfileView() {
-  const { student } = useStudent();
+  const { student, updateStudentData } = useStudent();
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState({
     name: student.name,
@@ -21,26 +23,41 @@ export function ProfileView() {
     newPassword: '',
     confirmPassword: ''
   });
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const handleSaveProfile = () => {
-    // In a real app, this would make an API call to update the profile
-    console.log('Saving profile:', editedData);
-    setIsEditing(false);
+  const handleSaveProfile = async () => {
+    try {
+      await studentService.updateProfile({ name: editedData.name, email: editedData.email });
+      toast.success('Perfil atualizado com sucesso!');
+      setIsEditing(false);
+      updateStudentData({ name: editedData.name, email: editedData.email }); 
+    } catch (error) {
+      toast.error('Erro ao atualizar o perfil.');
+    }
   };
 
-  const handleChangePassword = () => {
-    // In a real app, this would make an API call to change the password
+  const handleChangePassword = async () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      alert('As palavras-passe não coincidem');
+      toast.error('As palavras-passe não coincidem');
       return;
     }
-    console.log('Changing password');
-    setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    try {
+      await studentService.changePassword({ 
+        currentPassword: passwordData.currentPassword, 
+        newPassword: passwordData.newPassword 
+      });
+      toast.success('Palavra-passe alterada com sucesso!');
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (error) {
+      toast.error('Erro ao alterar a palavra-passe. Verifique a sua palavra-passe atual.');
+    }
   };
 
-  // Calculate age from a mock birth date
-  const birthDate = new Date('2006-03-15'); // Mock birth date
-  const age = new Date().getFullYear() - birthDate.getFullYear();
+  // Calculate age only if birthDate is present
+  const birthDate = (student as any).birthDate ? new Date((student as any).birthDate) : null;
+  const age = birthDate ? new Date().getFullYear() - birthDate.getFullYear() : null;
 
   return (
     <div className="space-y-6">
@@ -88,10 +105,12 @@ export function ProfileView() {
                 <span className="text-sm text-gray-600">Turma</span>
                 <span className="font-medium">{student.class}</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Idade</span>
-                <span className="font-medium">{age} anos</span>
-              </div>
+              {age !== null && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Idade</span>
+                  <span className="font-medium">{age} anos</span>
+                </div>
+              )}
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Matrícula</span>
                 <span className="font-medium">{student.enrollmentNumber}</span>
@@ -164,21 +183,25 @@ export function ProfileView() {
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Data de Nascimento</Label>
-                  <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-md">
-                    <Calendar className="w-4 h-4 text-gray-500" />
-                    <span>{format(birthDate, 'dd MMMM, yyyy', { locale: ptBR })}</span>
-                  </div>
-                </div>
+                {birthDate && (
+                  <>
+                    <div className="space-y-2">
+                      <Label>Data de Nascimento</Label>
+                      <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-md">
+                        <Calendar className="w-4 h-4 text-gray-500" />
+                        <span>{format(birthDate, 'dd MMMM, yyyy', { locale: ptBR })}</span>
+                      </div>
+                    </div>
 
-                <div className="space-y-2">
-                  <Label>Idade</Label>
-                  <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-md">
-                    <User className="w-4 h-4 text-gray-500" />
-                    <span>{age} anos</span>
-                  </div>
-                </div>
+                    <div className="space-y-2">
+                      <Label>Idade</Label>
+                      <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-md">
+                        <User className="w-4 h-4 text-gray-500" />
+                        <span>{age} anos</span>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -195,14 +218,6 @@ export function ProfileView() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label>Número de Estudante</Label>
-                  <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-md">
-                    <Hash className="w-4 h-4 text-gray-500" />
-                    <span>{student.studentId}</span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Número de Matrícula</Label>
                   <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-md">
                     <Hash className="w-4 h-4 text-gray-500" />
                     <span>{student.enrollmentNumber}</span>
@@ -241,7 +256,7 @@ export function ProfileView() {
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                   <div>
                     <h4 className="font-medium text-gray-900">Palavra-passe</h4>
-                    <p className="text-sm text-gray-600">Última alteração há 30 dias</p>
+                    <p className="text-sm text-gray-600">Altere a sua palavra-passe de acesso</p>
                   </div>
                   <Dialog>
                     <DialogTrigger asChild>
@@ -257,30 +272,60 @@ export function ProfileView() {
                       <div className="space-y-4">
                         <div className="space-y-2">
                           <Label htmlFor="currentPassword">Palavra-passe Atual</Label>
-                          <Input
-                            id="currentPassword"
-                            type="password"
-                            value={passwordData.currentPassword}
-                            onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                          />
+                          <div className="relative">
+                            <Input
+                              id="currentPassword"
+                              type={showCurrentPassword ? "text" : "password"}
+                              value={passwordData.currentPassword}
+                              onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                              className="pr-10"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                            >
+                              {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                          </div>
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="newPassword">Nova Palavra-passe</Label>
-                          <Input
-                            id="newPassword"
-                            type="password"
-                            value={passwordData.newPassword}
-                            onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                          />
+                          <div className="relative">
+                            <Input
+                              id="newPassword"
+                              type={showNewPassword ? "text" : "password"}
+                              value={passwordData.newPassword}
+                              onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                              className="pr-10"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowNewPassword(!showNewPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                            >
+                              {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                          </div>
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="confirmPassword">Confirmar Nova Palavra-passe</Label>
-                          <Input
-                            id="confirmPassword"
-                            type="password"
-                            value={passwordData.confirmPassword}
-                            onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                          />
+                          <div className="relative">
+                            <Input
+                              id="confirmPassword"
+                              type={showConfirmPassword ? "text" : "password"}
+                              value={passwordData.confirmPassword}
+                              onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                              className="pr-10"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                            >
+                              {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                          </div>
                         </div>
                         <div className="flex gap-3">
                           <Button onClick={handleChangePassword} className="flex-1">
@@ -295,15 +340,7 @@ export function ProfileView() {
                   </Dialog>
                 </div>
 
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                  <div>
-                    <h4 className="font-medium text-gray-900">Sessões Ativas</h4>
-                    <p className="text-sm text-gray-600">1 sessão ativa neste dispositivo</p>
-                  </div>
-                  <Button variant="outline">
-                    Ver Sessões
-                  </Button>
-                </div>
+
               </div>
             </CardContent>
           </Card>

@@ -9,6 +9,13 @@ export interface Student {
   enrollmentNumber: string;
 }
 
+export interface Attendance {
+  id: string;
+  subjectId: string | null;
+  date: string;
+  status: string; // 'present', 'absent', 'late', 'excused'
+}
+
 export interface Grade {
   id: string;
   subject: string;
@@ -60,8 +67,10 @@ export interface Payment {
   amount: number;
   dueDate: string;
   paidDate?: string;
-  status: 'pending' | 'paid' | 'overdue';
+  status: 'pending' | 'processing' | 'paid' | 'overdue';
   type: 'tuition' | 'fee' | 'material' | 'transport';
+  proofUrl?: string;
+  paymentMethod?: string;
 }
 
 export interface Notification {

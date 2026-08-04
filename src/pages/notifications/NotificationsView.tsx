@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,69 +11,13 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export function NotificationsView() {
-  const { notifications, markNotificationAsRead } = useStudent();
+  const navigate = useNavigate();
+  const { notifications, markNotificationAsRead, markAllNotificationsAsRead } = useStudent();
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
-  // Extended notifications with more variety
-  const allNotifications = [
-    ...notifications,
-    {
-      id: '3',
-      title: 'Prova de Física Agendada',
-      message: 'Foi agendada uma prova de Física para o dia 30 de Janeiro às 10:00.',
-      type: 'info' as const,
-      date: '2024-01-23',
-      read: false,
-      category: 'academic'
-    },
-    {
-      id: '4',
-      title: 'Evento: Feira de Ciências',
-      message: 'Não se esqueça de participar na Feira de Ciências no dia 1 de Fevereiro.',
-      type: 'info' as const,
-      date: '2024-01-22',
-      read: true,
-      category: 'event'
-    },
-    {
-      id: '5',
-      title: 'Mensagem do Professor',
-      message: 'O Prof. João Santos enviou uma mensagem sobre o projeto de Matemática.',
-      type: 'info' as const,
-      date: '2024-01-21',
-      read: false,
-      category: 'message'
-    },
-    {
-      id: '6',
-      title: 'Parabéns! Excelente Desempenho',
-      message: 'Parabéns pelo excelente resultado no teste de Português!',
-      type: 'success' as const,
-      date: '2024-01-20',
-      read: true,
-      category: 'academic'
-    },
-    {
-      id: '7',
-      title: 'Lembrete: Reunião de Pais',
-      message: 'Lembre-se da reunião de pais marcada para sexta-feira às 18:00.',
-      type: 'warning' as const,
-      date: '2024-01-19',
-      read: false,
-      category: 'event'
-    },
-    {
-      id: '8',
-      title: 'Nova Propina Disponível',
-      message: 'A propina de Fevereiro já está disponível para pagamento.',
-      type: 'info' as const,
-      date: '2024-01-18',
-      read: true,
-      category: 'financial'
-    }
-  ];
+  const allNotifications = notifications || [];
 
   const filteredNotifications = allNotifications.filter(notification => {
     const searchMatch = notification.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -144,15 +89,11 @@ export function NotificationsView() {
 
   const unreadCount = allNotifications.filter(n => !n.read).length;
   const todayCount = allNotifications.filter(n => 
-    format(new Date(n.date), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')
+    n.date ? format(new Date(n.date), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') : false
   ).length;
 
   const markAllAsRead = () => {
-    allNotifications.forEach(notification => {
-      if (!notification.read) {
-        markNotificationAsRead(notification.id);
-      }
-    });
+    markAllNotificationsAsRead();
   };
 
   return (
@@ -282,22 +223,22 @@ export function NotificationsView() {
                       )}
                     </div>
                     <div className="flex items-center gap-2">
-                      {(notification as any).category && (
+                      {(notification as any).category ? (
                         <Badge variant="outline" className="text-xs">
                           {getCategoryLabel((notification as any).category)}
                         </Badge>
-                      )}
+                      ) : null}
                       <span className="text-xs text-gray-500">
-                        {format(new Date(notification.date), 'dd MMM, HH:mm', { locale: ptBR })}
+                        {notification.date ? format(new Date(notification.date), 'dd MMM, HH:mm', { locale: ptBR }) : null}
                       </span>
                     </div>
                   </div>
                   <p className="text-gray-700 leading-relaxed">{notification.message}</p>
-                  {notification.actionUrl && (
+                  {notification.actionUrl ? (
                     <Button variant="link" className="p-0 h-auto mt-2 text-blue-600">
                       Ver detalhes →
                     </Button>
-                  )}
+                  ) : null}
                 </div>
               </div>
             </CardContent>
@@ -324,19 +265,35 @@ export function NotificationsView() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Button variant="outline" className="h-auto p-4 flex flex-col items-center gap-2">
+            <Button 
+              variant="outline" 
+              className="h-auto p-4 flex flex-col items-center gap-2"
+              onClick={() => navigate('/performance')}
+            >
               <GraduationCap className="w-6 h-6 text-blue-600" />
               <span className="text-sm">Notificações Acadêmicas</span>
             </Button>
-            <Button variant="outline" className="h-auto p-4 flex flex-col items-center gap-2">
+            <Button 
+              variant="outline" 
+              className="h-auto p-4 flex flex-col items-center gap-2"
+              onClick={() => navigate('/calendar')}
+            >
               <Calendar className="w-6 h-6 text-green-600" />
               <span className="text-sm">Eventos Escolares</span>
             </Button>
-            <Button variant="outline" className="h-auto p-4 flex flex-col items-center gap-2">
+            <Button 
+              variant="outline" 
+              className="h-auto p-4 flex flex-col items-center gap-2"
+              onClick={() => navigate('/messages')}
+            >
               <MessageSquare className="w-6 h-6 text-purple-600" />
               <span className="text-sm">Mensagens</span>
             </Button>
-            <Button variant="outline" className="h-auto p-4 flex flex-col items-center gap-2">
+            <Button 
+              variant="outline" 
+              className="h-auto p-4 flex flex-col items-center gap-2"
+              onClick={() => navigate('/payments')}
+            >
               <CreditCard className="w-6 h-6 text-orange-600" />
               <span className="text-sm">Financeiro</span>
             </Button>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useStudent } from '@/contexts/StudentContext';
 import { BookOpen, Download, Search, FileText, Video, Link, Gamepad2, Calendar, Eye } from '../../lib/icons';
+import { studentService } from '@/services/api/studentService';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -15,75 +16,23 @@ export function ResourcesView() {
   const [subjectFilter, setSubjectFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
 
-  // Mock resources data - in a real app this would come from context or API
-  const resources = [
-    {
-      id: '1',
-      title: 'Manual de Matemática - Capítulo 5: Derivadas',
-      type: 'pdf',
-      subject: 'Matemática',
-      url: '#',
-      description: 'Material completo sobre derivadas e suas aplicações práticas',
-      uploadDate: '2024-01-15',
-      size: '2.5 MB',
-      downloads: 45
-    },
-    {
-      id: '2',
-      title: 'Exercícios Resolvidos - Física Quântica',
-      type: 'pdf',
-      subject: 'Física',
-      url: '#',
-      description: 'Coleção de exercícios resolvidos sobre mecânica quântica',
-      uploadDate: '2024-01-18',
-      size: '1.8 MB',
-      downloads: 32
-    },
-    {
-      id: '3',
-      title: 'Videoaula: Análise Sintática',
-      type: 'video',
-      subject: 'Português',
-      url: '#',
-      description: 'Explicação detalhada sobre análise sintática e morfológica',
-      uploadDate: '2024-01-20',
-      size: '150 MB',
-      downloads: 67
-    },
-    {
-      id: '4',
-      title: 'Simulador de Reações Químicas',
-      type: 'link',
-      subject: 'Física',
-      url: '#',
-      description: 'Plataforma interativa para simular reações químicas',
-      uploadDate: '2024-01-22',
-      size: '-',
-      downloads: 23
-    },
-    {
-      id: '5',
-      title: 'Jogo: Quiz de História Mundial',
-      type: 'game',
-      subject: 'História',
-      url: '#',
-      description: 'Jogo educativo sobre eventos históricos mundiais',
-      uploadDate: '2024-01-25',
-      size: '5.2 MB',
-      downloads: 89
-    },
-    {
-      id: '6',
-      title: 'Resumo: Literatura Portuguesa Século XIX',
-      type: 'pdf',
-      subject: 'Português',
-      url: '#',
-      description: 'Resumo completo dos principais autores e obras do século XIX',
-      uploadDate: '2024-01-28',
-      size: '950 KB',
-      downloads: 56
-    }
-  ];
+  const [resources, setResources] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadResources = async () => {
+      try {
+        setIsLoading(true);
+        const data = await studentService.getResources();
+        setResources(data);
+      } catch (error) {
+        console.error('Failed to load resources:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadResources();
+  }, []);
 
   const filteredResources = resources.filter(resource => {
     const searchMatch = resource.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -115,7 +64,7 @@ export function ResourcesView() {
       case 'video':
         return <Badge variant="default">Vídeo</Badge>;
       case 'link':
-        return <Badge variant="success">Link</Badge>;
+        return <Badge variant="outline" className="text-green-600 border-green-600">Link</Badge>;
       case 'game':
         return <Badge variant="secondary">Jogo</Badge>;
       default:
@@ -129,9 +78,8 @@ export function ResourcesView() {
   };
 
   const totalResources = resources.length;
-  const totalDownloads = resources.reduce((acc, resource) => acc + resource.downloads, 0);
   const recentResources = resources.filter(resource => 
-    new Date(resource.uploadDate) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+    resource.createdAt ? new Date(resource.createdAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) : false
   ).length;
 
   return (
@@ -160,11 +108,13 @@ export function ResourcesView() {
         <Card>
           <CardContent className="flex items-center p-6">
             <div className="p-2 bg-green-100 rounded-lg mr-4">
-              <Download className="w-6 h-6 text-green-600" />
+              <FileText className="w-6 h-6 text-green-600" />
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600">Downloads</p>
-              <p className="text-2xl font-bold text-gray-900">{totalDownloads}</p>
+              <p className="text-sm font-medium text-gray-600">Tipos de Ficheiro</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {new Set(resources.map(r => r.type)).size}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -256,32 +206,47 @@ export function ResourcesView() {
               
               <div className="flex items-center justify-between text-sm text-gray-500">
                 <span>{resource.subject}</span>
-                <span>{resource.size}</span>
               </div>
               
               <div className="flex items-center justify-between text-xs text-gray-400">
-                <span>{format(new Date(resource.uploadDate), 'dd MMM, yyyy', { locale: ptBR })}</span>
-                <div className="flex items-center gap-1">
-                  <Download className="w-3 h-3" />
-                  <span>{resource.downloads}</span>
-                </div>
+                <span>{resource.createdAt ? format(new Date(resource.createdAt), 'dd MMM, yyyy', { locale: ptBR }) : '-'}</span>
               </div>
               
               <div className="flex gap-2 pt-2">
                 {resource.type === 'video' || resource.type === '' || resource.type === 'pdf' ? (
-                  <div className='flex gap-2 pt-2 w-screen'>
-                    <Button size="sm" className="flex-1 bg-blue-600 hover:bg-blue-700">
+                  <div className='flex gap-2 pt-2 w-full'>
+                    <Button 
+                      size="sm" 
+                      className="flex-1 bg-blue-600 hover:bg-blue-700"
+                      onClick={() => {
+                        const link = document.createElement('a');
+                        link.href = resource.url;
+                        link.download = resource.title || 'download';
+                        link.target = '_blank';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                      }}
+                    >
                       <Download className="w-4 h-4 mr-2" />
                       Download
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => window.open(resource.url, '_blank')}
+                    >
                       <Eye className="w-4 h-4 mr-2" />
-                      Pré-visualizar
+                      Visualizar
                     </Button>
                   </div>
                   
                 ) : (
-                  <Button variant="outline" className='w-full'>
+                  <Button 
+                    variant="outline" 
+                    className='w-full'
+                    onClick={() => window.open(resource.url, '_blank')}
+                  >
                     <Eye className="w-4 h-4 mr-2" />
                     Acessar
                   </Button>

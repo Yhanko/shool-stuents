@@ -21,7 +21,9 @@ export function Dashboard() {
 
   const navigate = useNavigate();
 
-  const averageGrade = grades.reduce((acc, grade) => acc + grade.grade, 0) / grades.length;
+  const averageGrade = grades.length > 0 
+    ? grades.reduce((acc, grade) => acc + grade.grade, 0) / grades.length 
+    : 0;
   const upcomingEvents = events.filter(event => new Date(event.date) > new Date()).slice(0, 3);
   const pendingPayments = payments.filter(payment => payment.status === 'pending');
   const recentMessages = messages.slice(0, 3);
@@ -50,11 +52,10 @@ export function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard
           title="Média Geral"
-          value={averageGrade.toFixed(1)}
+          value={averageGrade > 0 ? averageGrade.toFixed(1) : "-"}
           icon={GraduationCap}
           color="bg-blue-500"
-          trend={{ value: 5.2, positive: true }}
-          description="Baseado em todas as disciplinas"
+          description={grades.length > 0 ? "Baseado nas notas atuais" : "Sem notas registadas"}
         />
         <StatsCard
           title="Disciplinas"
@@ -138,9 +139,9 @@ export function Dashboard() {
                   <p className="text-sm text-gray-500">
                     {format(new Date(event.date), 'dd MMM, yyyy', { locale: ptBR })} às {event.time}
                   </p>
-                  {event.location && (
+                  {event.location ? (
                     <p className="text-sm text-gray-400">{event.location}</p>
-                  )}
+                  ) : null}
                 </div>
               </div>
             ))}

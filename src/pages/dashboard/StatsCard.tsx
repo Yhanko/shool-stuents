@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { DivideIcon as LucideIcon } from 'lucide-react';
+import { type LucideIcon } from 'lucide-react';
 
 interface StatsCardProps {
   title: string;
@@ -25,10 +25,10 @@ export function StatsCard({ title, value, icon: Icon, trend, color, description 
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold text-gray-900">{value}</div>
-        {description && (
+        {description ? (
           <p className="text-xs text-gray-500 mt-1">{description}</p>
-        )}
-        {trend && (
+        ) : null}
+        {trend ? (
           <div className="flex items-center mt-2">
             <span className={cn(
               "text-xs font-medium",
@@ -38,7 +38,7 @@ export function StatsCard({ title, value, icon: Icon, trend, color, description 
             </span>
             <span className="text-xs text-gray-500 ml-1">vs. período anterior</span>
           </div>
-        )}
+        ) : null}
       </CardContent>
       <div className={cn("absolute top-0 right-0 w-1 h-full", color)} />
     </Card>
