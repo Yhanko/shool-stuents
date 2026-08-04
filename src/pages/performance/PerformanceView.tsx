@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
+// Unused import removed
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useStudent } from '@/contexts/StudentContext';
 import { TrendingUp, TrendingDown, BarChart3, Target, Award, BookOpen, Clock } from '../../lib/icons';
@@ -39,27 +39,27 @@ export function PerformanceView() {
     '3': ['3', 'third']
   };
 
-  const filteredGrades = selectedPeriod === 'all' 
-    ? grades 
+  const filteredGrades = selectedPeriod === 'all'
+    ? grades
     : grades.filter(g => periodMap[selectedPeriod]?.includes(String(g.period).toLowerCase()));
 
   // Calculate performance metrics
   const subjectPerformance = subjects.map(subject => {
     const subjectGrades = filteredGrades.filter(g => g.subject === subject.name);
-    const average = subjectGrades.length > 0 
-      ? subjectGrades.reduce((acc, grade) => acc + grade.grade, 0) / subjectGrades.length 
+    const average = subjectGrades.length > 0
+      ? subjectGrades.reduce((acc, grade) => acc + grade.grade, 0) / subjectGrades.length
       : 0;
-    
+
     // Calculate trend dynamically based on the last two grades
     let trend = 'up';
     let trendValue = 0;
-    
+
     if (subjectGrades.length >= 2) {
       // Sort by date to get the most recent grades
       const sortedGrades = [...subjectGrades].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
       const lastGrade = sortedGrades[sortedGrades.length - 1].grade;
       const prevGrade = sortedGrades[sortedGrades.length - 2].grade;
-      
+
       trend = lastGrade >= prevGrade ? 'up' : 'down';
       // trendValue as a percentage change or raw difference (e.g., if out of 20)
       trendValue = prevGrade > 0 ? (Math.abs(lastGrade - prevGrade) / prevGrade) * 100 : 0;
@@ -77,11 +77,11 @@ export function PerformanceView() {
         subjectAttendancePercentage = Math.round((presentCount / subjectAttendances.length) * 100);
       }
     }
-    
-    return { 
-      ...subject, 
-      average, 
-      trend, 
+
+    return {
+      ...subject,
+      average,
+      trend,
       trendValue,
       totalGrades: subjectGrades.length,
       lastGrade: subjectGrades.length > 0 ? subjectGrades[subjectGrades.length - 1].grade : 0,
@@ -91,8 +91,8 @@ export function PerformanceView() {
     };
   }).sort((a, b) => b.average - a.average);
 
-  const overallAverage = subjectPerformance.length > 0 
-    ? subjectPerformance.reduce((acc, subject) => acc + subject.average, 0) / subjectPerformance.length 
+  const overallAverage = subjectPerformance.length > 0
+    ? subjectPerformance.reduce((acc, subject) => acc + subject.average, 0) / subjectPerformance.length
     : 0;
   const bestSubject = subjectPerformance.length > 0 ? subjectPerformance[0] : null;
   const weakestSubject = subjectPerformance.length > 0 ? subjectPerformance[subjectPerformance.length - 1] : null;
@@ -104,7 +104,7 @@ export function PerformanceView() {
           <h1 className="text-2xl font-bold text-gray-900">Análise de Desempenho</h1>
           <p className="text-gray-600">Acompanhe o seu progresso acadêmico detalhado</p>
         </div>
-        
+
         <div className="flex gap-3">
           <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
             <SelectTrigger className="w-40">
@@ -185,7 +185,7 @@ export function PerformanceView() {
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
                     <span className="text-2xl font-bold text-gray-400">#{index + 1}</span>
-                    <div 
+                    <div
                       className="w-4 h-4 rounded-full"
                       style={{ backgroundColor: subject.color }}
                     />
@@ -195,37 +195,36 @@ export function PerformanceView() {
                     <p className="text-sm text-gray-600">{subject.teacher}</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-6">
                   <div className="text-center">
                     <p className="text-sm text-gray-600">Média</p>
                     <p className="text-xl font-bold text-gray-900">{subject.average.toFixed(1)}</p>
                   </div>
-                  
+
                   <div className="text-center">
                     <p className="text-sm text-gray-600">Frequência</p>
                     <p className="text-lg font-semibold text-gray-900">{subject.attendance}%</p>
                   </div>
-                  
+
                   <div className="text-center">
                     <p className="text-sm text-gray-600">Avaliações</p>
                     <p className="text-lg font-semibold text-gray-900">{subject.totalGrades}</p>
                   </div>
-                  
+
                   <div className="flex items-center gap-2">
                     {subject.trend === 'up' ? (
                       <TrendingUp className="w-5 h-5 text-green-600" />
                     ) : (
                       <TrendingDown className="w-5 h-5 text-red-600" />
                     )}
-                    <span className={`text-sm font-medium ${
-                      subject.trend === 'up' ? 'text-green-600' : 'text-red-600'
-                    }`}>
+                    <span className={`text-sm font-medium ${subject.trend === 'up' ? 'text-green-600' : 'text-red-600'
+                      }`}>
                       {subject.trendValue.toFixed(1)}%
                     </span>
                   </div>
-                  
-                  <Badge 
+
+                  <Badge
                     variant={subject.average >= 14 ? 'default' : subject.average >= 10 ? 'secondary' : 'destructive'}
                     className={subject.average >= 14 ? 'bg-green-500 hover:bg-green-600 text-white' : ''}
                   >
@@ -255,7 +254,7 @@ export function PerformanceView() {
                 .map(subject => (
                   <div key={subject.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
                     <div className="flex items-center gap-3">
-                      <div 
+                      <div
                         className="w-3 h-3 rounded-full"
                         style={{ backgroundColor: subject.color }}
                       />
@@ -292,7 +291,7 @@ export function PerformanceView() {
                 .map(subject => (
                   <div key={subject.id} className="flex items-center justify-between p-3 bg-orange-50 rounded-lg border border-orange-200">
                     <div className="flex items-center gap-3">
-                      <div 
+                      <div
                         className="w-3 h-3 rounded-full"
                         style={{ backgroundColor: subject.color }}
                       />
@@ -339,7 +338,7 @@ export function PerformanceView() {
                   )}
                 </ul>
               </div>
-              
+
               <div className="p-4 bg-green-50 rounded-lg border border-green-200">
                 <h4 className="font-medium text-green-900 mb-3">Metas para o Próximo Período</h4>
                 <ul className="space-y-2 text-sm text-green-800">

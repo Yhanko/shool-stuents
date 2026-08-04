@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Mail, Lock, Eye, EyeOff, GraduationCap, Loader2 } from "../lib/icons";
+import { Mail, Lock, Eye, EyeOff, GraduationCap, Loader2, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import api from "@/services/api/axios";
@@ -15,6 +15,13 @@ export function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  // Recovery State
+  const [isRecovering, setIsRecovering] = useState(false);
+  const [recoveryStep, setRecoveryStep] = useState<1 | 2>(1);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
   const navigate = useNavigate(); 
   const setAuth = useAuthStore((state) => state.setAuth);
 
@@ -51,6 +58,60 @@ export function Login() {
       } else {
         toast.error("Ocorreu um erro ao tentar entrar. Tente novamente mais tarde.");
       }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      toast.error("Por favor, insira o seu email.");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      await api.post("/auth/verify-email", { email, role: 'STUDENT' });
+      setRecoveryStep(2);
+      toast.success("Conta verificada. Insira a nova senha.");
+    } catch (error: any) {
+      console.error(error);
+      const msg = error.response?.data?.message || "Erro ao verificar conta.";
+      toast.error(msg);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPassword || !confirmPassword) {
+      toast.error("Por favor, preencha todos os campos.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error("As senhas não coincidem.");
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error("A senha deve ter pelo menos 6 caracteres.");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      await api.post("/auth/reset-password", { email, role: 'STUDENT', newPassword });
+      toast.success("Senha alterada com sucesso! Faça login.");
+      setIsRecovering(false);
+      setRecoveryStep(1);
+      setPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error: any) {
+      console.error(error);
+      const msg = error.response?.data?.message || "Erro ao redefinir senha.";
+      toast.error(msg);
     } finally {
       setIsLoading(false);
     }
@@ -102,14 +163,18 @@ export function Login() {
               <CardTitle className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
                 Portal do Aluno
               </CardTitle>
-              <CardDescription className="text-base text-slate-600 dark:text-slate-400">
-                Introduza as suas credenciais para aceder
-              </CardDescription>
+              <CardDescription className="text-slate-500 dark:text-slate-400 text-lg">
+              {isRecovering 
+                ? (recoveryStep === 1 ? <span key="step1">Recuperação de conta</span> : <span key="step2">Definir nova senha</span>)
+                : <span key="login-desc">Entre para acessar as suas aulas e notas</span>
+              }
+            </CardDescription>
             </div>
           </CardHeader>
           
           <CardContent className="pb-12 px-10">
-            <form className="space-y-8" onSubmit={handleLogin}>
+            {!isRecovering ? (
+            <form key="login-form" className="space-y-8" onSubmit={handleLogin}>
               <div className="space-y-4">
                 <div className="space-y-3">
                   <Label htmlFor="email" className="text-slate-700 dark:text-slate-300 font-medium">E-mail Escolar</Label>
@@ -130,7 +195,7 @@ export function Login() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="password" className="text-slate-700 dark:text-slate-300 font-medium">Senha</Label>
-                    <a href="#" className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline">Esqueceu a senha?</a>
+                    <button type="button" onClick={() => setIsRecovering(true)} className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline bg-transparent border-none">Esqueceu a senha?</button>
                   </div>
                   <div className="relative group">
                     <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
@@ -169,6 +234,95 @@ export function Login() {
                 )}
               </Button>
             </form>
+            ) : recoveryStep === 1 ? (
+              <form key="verify-form" className="space-y-8" onSubmit={handleVerifyEmail}>
+                <div className="space-y-4">
+                  <div className="space-y-3">
+                    <Label htmlFor="recovery-email" className="text-slate-700 dark:text-slate-300 font-medium">Email da Conta</Label>
+                    <div className="relative group">
+                      <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                      <Input
+                        id="recovery-email"
+                        type="email"
+                        placeholder="aluno@escola.pt"
+                        className="pl-11 h-14 text-base rounded-xl bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus-visible:ring-blue-500 transition-all shadow-sm"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex flex-col gap-3 mt-4">
+                  <Button 
+                    type="submit" 
+                    className="w-full h-14 rounded-xl bg-blue-600 hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-500/20 text-white font-medium text-lg transition-all duration-200"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? <span className="flex items-center justify-center"><Loader2 className="w-5 h-5 mr-2 animate-spin" /> A verificar...</span> : <span>Verificar Conta</span>}
+                  </Button>
+                  <Button variant="ghost" type="button" onClick={() => {setIsRecovering(false); setRecoveryStep(1);}} className="w-full h-14 text-slate-500">
+                    <ArrowLeft className="w-4 h-4 mr-2"/> Voltar ao Login
+                  </Button>
+                </div>
+              </form>
+            ) : (
+              <form key="reset-form" className="space-y-8" onSubmit={handleResetPassword}>
+                <div className="space-y-4">
+                  <div className="space-y-3">
+                    <Label htmlFor="new-password" className="text-slate-700 dark:text-slate-300 font-medium">Nova Senha</Label>
+                    <div className="relative group">
+                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                      <Input
+                        id="new-password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        className="pl-11 pr-11 h-14 text-base rounded-xl bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus-visible:ring-blue-500 transition-all shadow-sm"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        required
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors bg-transparent border-0 outline-none"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <Label htmlFor="confirm-password" className="text-slate-700 dark:text-slate-300 font-medium">Confirmar Nova Senha</Label>
+                    <div className="relative group">
+                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                      <Input
+                        id="confirm-password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        className="pl-11 pr-11 h-14 text-base rounded-xl bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus-visible:ring-blue-500 transition-all shadow-sm"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex flex-col gap-3 mt-4">
+                  <Button 
+                    type="submit" 
+                    className="w-full h-14 rounded-xl bg-blue-600 hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-500/20 text-white font-medium text-lg transition-all duration-200"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? <span className="flex items-center justify-center"><Loader2 className="w-5 h-5 mr-2 animate-spin" /> A redefinir...</span> : <span>Redefinir Senha</span>}
+                  </Button>
+                  <Button variant="ghost" type="button" onClick={() => {setIsRecovering(false); setRecoveryStep(1);}} className="w-full h-14 text-slate-500">
+                    <ArrowLeft className="w-4 h-4 mr-2"/> Voltar ao Login
+                  </Button>
+                </div>
+              </form>
+            )}
           </CardContent>
         </Card>
       </motion.div>

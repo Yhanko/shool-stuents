@@ -17,7 +17,7 @@ export function ResourcesView() {
   const [typeFilter, setTypeFilter] = useState<string>('all');
 
   const [resources, setResources] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [_isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const loadResources = async () => {
@@ -36,7 +36,7 @@ export function ResourcesView() {
 
   const filteredResources = resources.filter(resource => {
     const searchMatch = resource.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       resource.description.toLowerCase().includes(searchTerm.toLowerCase());
+      resource.description.toLowerCase().includes(searchTerm.toLowerCase());
     const subjectMatch = subjectFilter === 'all' || resource.subject === subjectFilter;
     const typeMatch = typeFilter === 'all' || resource.type === typeFilter;
     return searchMatch && subjectMatch && typeMatch;
@@ -78,7 +78,7 @@ export function ResourcesView() {
   };
 
   const totalResources = resources.length;
-  const recentResources = resources.filter(resource => 
+  const recentResources = resources.filter(resource =>
     resource.createdAt ? new Date(resource.createdAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) : false
   ).length;
 
@@ -192,7 +192,7 @@ export function ResourcesView() {
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   {getResourceIcon(resource.type)}
-                  <div 
+                  <div
                     className="w-3 h-3 rounded-full"
                     style={{ backgroundColor: getSubjectColor(resource.subject) }}
                   />
@@ -203,20 +203,20 @@ export function ResourcesView() {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-gray-600 line-clamp-2">{resource.description}</p>
-              
+
               <div className="flex items-center justify-between text-sm text-gray-500">
                 <span>{resource.subject}</span>
               </div>
-              
+
               <div className="flex items-center justify-between text-xs text-gray-400">
                 <span>{resource.createdAt ? format(new Date(resource.createdAt), 'dd MMM, yyyy', { locale: ptBR }) : '-'}</span>
               </div>
-              
+
               <div className="flex gap-2 pt-2">
                 {resource.type === 'video' || resource.type === '' || resource.type === 'pdf' ? (
                   <div className='flex gap-2 pt-2 w-full'>
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       className="flex-1 bg-blue-600 hover:bg-blue-700"
                       onClick={() => {
                         const link = document.createElement('a');
@@ -231,8 +231,8 @@ export function ResourcesView() {
                       <Download className="w-4 h-4 mr-2" />
                       Download
                     </Button>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
                       onClick={() => window.open(resource.url, '_blank')}
                     >
@@ -240,10 +240,10 @@ export function ResourcesView() {
                       Visualizar
                     </Button>
                   </div>
-                  
+
                 ) : (
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className='w-full'
                     onClick={() => window.open(resource.url, '_blank')}
                   >
