@@ -1,5 +1,5 @@
 import api from './axios';
-import { Student, Subject, Grade, Message, Event, Payment, Notification } from '@/types';
+import { Student } from '@/types';
 
 export const studentService = {
   getProfile: async () => {

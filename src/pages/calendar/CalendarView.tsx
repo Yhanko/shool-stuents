@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useStudent } from '@/contexts/StudentContext';
+// Unused import removed
 import { Calendar, Clock, MapPin, Users, BookOpen, Trophy, AlertTriangle } from '../../lib/icons';
 import { studentService } from '@/services/api/studentService';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, isSameMonth } from 'date-fns';
@@ -14,7 +14,7 @@ export function CalendarView() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [filterType, setFilterType] = useState<string>('all');
-  const [isLoading, setIsLoading] = useState(true);
+  const [_isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -95,7 +95,7 @@ export function CalendarView() {
           <h1 className="text-2xl font-bold text-gray-900">Calendário Escolar</h1>
           <p className="text-gray-600">Acompanhe todos os eventos e atividades</p>
         </div>
-        
+
         <div className="flex gap-3">
           <Select value={filterType} onValueChange={setFilterType}>
             <SelectTrigger className="w-48">
@@ -160,7 +160,7 @@ export function CalendarView() {
                   const dayEvents = getEventsForDate(day);
                   const isSelected = selectedDate && isSameDay(day, selectedDate);
                   const isCurrentMonth = isSameMonth(day, currentDate);
-                  
+
                   return (
                     <div
                       key={day.toISOString()}
@@ -267,10 +267,10 @@ export function CalendarView() {
                       ) : null}
                     </div>
                     <Badge variant={event.type === 'exam' ? 'destructive' : 'secondary'}>
-                      {event.type === 'exam' ? 'Prova' : 
-                       event.type === 'event' ? 'Evento' :
-                       event.type === 'meeting' ? 'Reunião' :
-                       event.type === 'deadline' ? 'Prazo' : 'Feriado'}
+                      {event.type === 'exam' ? 'Prova' :
+                        event.type === 'event' ? 'Evento' :
+                          event.type === 'meeting' ? 'Reunião' :
+                            event.type === 'deadline' ? 'Prazo' : 'Feriado'}
                     </Badge>
                   </div>
                 ))}

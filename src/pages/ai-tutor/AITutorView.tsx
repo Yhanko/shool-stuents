@@ -19,7 +19,7 @@ interface AIMessage {
 }
 
 export function AITutorView() {
-  const { student, subjects, grades } = useStudent();
+  const { student, subjects } = useStudent();
   const [messages, setMessages] = useState<AIMessage[]>([
     {
       id: '1',
@@ -34,7 +34,7 @@ export function AITutorView() {
 
   const [aiAnalysis, setAiAnalysis] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [quickQuestions, setQuickQuestions] = useState<{texto: string, categoria: string}[]>([]);
+  const [quickQuestions, setQuickQuestions] = useState<{ texto: string, categoria: string }[]>([]);
 
   useEffect(() => {
     const fetchAnalysis = async () => {
@@ -42,7 +42,7 @@ export function AITutorView() {
         setIsLoading(true);
         const data = await studentService.getAiAnalysis(student.id);
         setAiAnalysis(data);
-        
+
         // Atualizar primeira mensagem baseada na análise
         setMessages([
           {
@@ -95,12 +95,12 @@ export function AITutorView() {
     try {
       // O backend espera { question, studentId }
       // Passamos o selectedSubject na string da pergunta caso haja algum
-      const questionToSend = selectedSubject 
-        ? `[Sobre ${selectedSubject}] ${currentMessage}` 
+      const questionToSend = selectedSubject
+        ? `[Sobre ${selectedSubject}] ${currentMessage}`
         : currentMessage;
-        
+
       const response = await studentService.chatWithAi(questionToSend, student.id);
-      
+
       const aiMessage: AIMessage = {
         id: (Date.now() + 1).toString(),
         type: 'ai',
@@ -108,7 +108,7 @@ export function AITutorView() {
         timestamp: new Date().toISOString(),
         subject: selectedSubject || undefined
       };
-      
+
       setMessages(prev => [...prev, aiMessage]);
     } catch (error) {
       console.error('Erro ao comunicar com a IA', error);
@@ -219,7 +219,7 @@ export function AITutorView() {
                 </Select>
               </div>
             </CardHeader>
-            
+
             <CardContent className="flex-1 p-0">
               <div className="h-64 overflow-y-auto p-4 space-y-4">
                 {messages.map((message) => (
@@ -227,11 +227,10 @@ export function AITutorView() {
                     key={message.id}
                     className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
-                    <div className={`max-w-xs lg:max-w-md xl:max-w-lg px-4 py-2 rounded-lg ${
-                      message.type === 'user'
+                    <div className={`max-w-xs lg:max-w-md xl:max-w-lg px-4 py-2 rounded-lg ${message.type === 'user'
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-100 text-gray-900'
-                    }`}>
+                      }`}>
                       {message.type === 'ai' && (
                         <div className="flex items-center gap-2 mb-1">
                           <Bot className="w-4 h-4" />
@@ -241,15 +240,15 @@ export function AITutorView() {
                       {message.type === 'user' ? (
                         <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                       ) : (
-                        <div 
+                        <div
                           className="text-sm space-y-2 prose prose-sm max-w-none"
-                          dangerouslySetInnerHTML={{ 
+                          dangerouslySetInnerHTML={{
                             __html: message.content
                               .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                               .replace(/\n\n/g, '<br/><br/>')
                               .replace(/\n\* /g, '<br/>• ')
                               .replace(/\n- /g, '<br/>• ')
-                          }} 
+                          }}
                         />
                       )}
                       <p className="text-xs opacity-70 mt-1">
@@ -258,7 +257,7 @@ export function AITutorView() {
                     </div>
                   </div>
                 ))}
-                
+
                 {isTyping && (
                   <div className="flex justify-start">
                     <div className="bg-gray-100 text-gray-900 px-4 py-2 rounded-lg">
@@ -276,7 +275,7 @@ export function AITutorView() {
                 )}
               </div>
             </CardContent>
-            
+
             <div className="border-t p-4">
               <div className="flex gap-2">
                 <Input
@@ -286,7 +285,7 @@ export function AITutorView() {
                   onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                   disabled={isTyping}
                 />
-                <Button 
+                <Button
                   onClick={handleSendMessage}
                   disabled={!currentMessage.trim() || isTyping}
                 >
@@ -320,7 +319,7 @@ export function AITutorView() {
                       )) || <li>Continue assim!</li>}
                     </ul>
                   </div>
-                  
+
                   <div className="p-4 bg-green-50 rounded-lg border border-green-200">
                     <h4 className="font-medium text-green-900 mb-2">Pontos Fortes</h4>
                     <p className="text-sm text-green-700 mb-3">
