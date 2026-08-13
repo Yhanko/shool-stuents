@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -11,7 +10,6 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export function NotificationsView() {
-  const navigate = useNavigate();
   const { notifications, markNotificationAsRead, markAllNotificationsAsRead } = useStudent();
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
@@ -21,11 +19,11 @@ export function NotificationsView() {
 
   const filteredNotifications = allNotifications.filter(notification => {
     const searchMatch = notification.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       notification.message.toLowerCase().includes(searchTerm.toLowerCase());
+      notification.message.toLowerCase().includes(searchTerm.toLowerCase());
     const typeMatch = typeFilter === 'all' || notification.type === typeFilter;
-    const statusMatch = statusFilter === 'all' || 
-                       (statusFilter === 'read' && notification.read) ||
-                       (statusFilter === 'unread' && !notification.read);
+    const statusMatch = statusFilter === 'all' ||
+      (statusFilter === 'read' && notification.read) ||
+      (statusFilter === 'unread' && !notification.read);
     return searchMatch && typeMatch && statusMatch;
   });
 
@@ -44,7 +42,7 @@ export function NotificationsView() {
           break;
       }
     }
-    
+
     switch (type) {
       case 'success':
         return <CheckCircle className="w-5 h-5" />;
@@ -88,7 +86,7 @@ export function NotificationsView() {
   };
 
   const unreadCount = allNotifications.filter(n => !n.read).length;
-  const todayCount = allNotifications.filter(n => 
+  const todayCount = allNotifications.filter(n =>
     n.date ? format(new Date(n.date), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') : false
   ).length;
 
@@ -103,7 +101,7 @@ export function NotificationsView() {
           <h1 className="text-2xl font-bold text-gray-900">Notificações</h1>
           <p className="text-gray-600">Mantenha-se atualizado com todas as novidades</p>
         </div>
-        
+
         <div className="flex gap-3">
           <Button variant="outline" onClick={markAllAsRead}>
             Marcar Todas como Lidas
@@ -202,11 +200,10 @@ export function NotificationsView() {
       {/* Notifications List */}
       <div className="space-y-4">
         {filteredNotifications.map(notification => (
-          <Card 
-            key={notification.id} 
-            className={`transition-all hover:shadow-md cursor-pointer ${
-              !notification.read ? 'border-blue-200 bg-blue-50' : 'border-gray-200'
-            }`}
+          <Card
+            key={notification.id}
+            className={`transition-all hover:shadow-md cursor-pointer ${!notification.read ? 'border-blue-200 bg-blue-50' : 'border-gray-200'
+              }`}
             onClick={() => markNotificationAsRead(notification.id)}
           >
             <CardContent className="p-6">
@@ -257,49 +254,6 @@ export function NotificationsView() {
           </CardContent>
         </Card>
       )}
-
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Ações Rápidas</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Button 
-              variant="outline" 
-              className="h-auto p-4 flex flex-col items-center gap-2"
-              onClick={() => navigate('/performance')}
-            >
-              <GraduationCap className="w-6 h-6 text-blue-600" />
-              <span className="text-sm">Notificações Acadêmicas</span>
-            </Button>
-            <Button 
-              variant="outline" 
-              className="h-auto p-4 flex flex-col items-center gap-2"
-              onClick={() => navigate('/calendar')}
-            >
-              <Calendar className="w-6 h-6 text-green-600" />
-              <span className="text-sm">Eventos Escolares</span>
-            </Button>
-            <Button 
-              variant="outline" 
-              className="h-auto p-4 flex flex-col items-center gap-2"
-              onClick={() => navigate('/messages')}
-            >
-              <MessageSquare className="w-6 h-6 text-purple-600" />
-              <span className="text-sm">Mensagens</span>
-            </Button>
-            <Button 
-              variant="outline" 
-              className="h-auto p-4 flex flex-col items-center gap-2"
-              onClick={() => navigate('/payments')}
-            >
-              <CreditCard className="w-6 h-6 text-orange-600" />
-              <span className="text-sm">Financeiro</span>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

@@ -9,6 +9,7 @@ import '../styles/App.css';
 export function Layout() {
   const location = useLocation();
   const [currentPage, setCurrentPage] = useState('dashboard');
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   useEffect(() => {
     // Extract path without leading slash, defaulting to dashboard
@@ -18,11 +19,16 @@ export function Layout() {
 
   return (
     <StudentProvider>
-      <div className="flex">
-        <Sidebar currentPage={currentPage} onPageChange={setCurrentPage} />
+      <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950 w-full">
+        <Sidebar 
+          currentPage={currentPage} 
+          onPageChange={setCurrentPage} 
+          isMobileOpen={isMobileOpen}
+          onMobileClose={() => setIsMobileOpen(false)}
+        />
         <div className="flex-1 flex flex-col overflow-hidden transition-all duration-300">
-          <Header />
-          <main className="flex-1 overflow-y-auto p-6">
+          <Header onMenuClick={() => setIsMobileOpen(true)} />
+          <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
             <ErrorBoundary>
               <Outlet />
             </ErrorBoundary>

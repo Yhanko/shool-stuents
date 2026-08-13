@@ -197,15 +197,15 @@ export function AITutorView() {
 
         {/* Chat Interface */}
         <div className="lg:col-span-3">
-          <Card className="h-96 flex flex-col">
-            <CardHeader className="border-b">
+          <Card className="flex flex-col h-[550px] shadow-sm border-slate-200">
+            <CardHeader className="border-b py-4">
               <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-lg">
                   <Bot className="w-5 h-5 text-blue-600" />
                   Chat com IA Tutora
                 </CardTitle>
                 <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                  <SelectTrigger className="w-48">
+                  <SelectTrigger className="w-[180px] h-9">
                     <SelectValue placeholder="Escolher disciplina" />
                   </SelectTrigger>
                   <SelectContent>
@@ -220,8 +220,7 @@ export function AITutorView() {
               </div>
             </CardHeader>
 
-            <CardContent className="flex-1 p-0">
-              <div className="h-64 overflow-y-auto p-4 space-y-4">
+            <CardContent className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/30">
                 {messages.map((message) => (
                   <div
                     key={message.id}
@@ -273,10 +272,9 @@ export function AITutorView() {
                     </div>
                   </div>
                 )}
-              </div>
             </CardContent>
 
-            <div className="border-t p-4">
+            <div className="border-t p-3 bg-white mt-auto rounded-b-xl">
               <div className="flex gap-2">
                 <Input
                   value={currentMessage}

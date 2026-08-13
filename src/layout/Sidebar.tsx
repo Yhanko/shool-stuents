@@ -22,6 +22,8 @@ import { useNavigate } from "react-router-dom";
 interface SidebarProps {
   currentPage: string;
   onPageChange: (page: string) => void;
+  isMobileOpen: boolean;
+  onMobileClose: () => void;
 }
 
 const menuItems = [
@@ -37,7 +39,7 @@ const menuItems = [
   { id: 'perfil', label: 'Perfil', icon: User }
 ];
 
-export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
+export function Sidebar({ currentPage, onPageChange, isMobileOpen, onMobileClose }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { student, unreadMessages, unreadNotifications, clearUnreadMessages } = useStudent();
   const navigate = useNavigate();
@@ -50,18 +52,19 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
   return (
     <>
       {/* Mobile overlay */}
-      {!isCollapsed && (
+      {isMobileOpen && (
         <div 
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={() => setIsCollapsed(true)}
+          onClick={onMobileClose}
         />
       )}
       
       <aside className={cn(
-        "fixed left-0 top-0 h-full bg-white border-r border-gray-200 transition-all duration-300 z-50",
-        isCollapsed ? "w-16" : "w-56"
+        "fixed lg:sticky left-0 top-0 h-screen bg-white border-r border-gray-200 transition-all duration-300 z-50 flex-shrink-0",
+        isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
+        isCollapsed ? "w-64 lg:w-20" : "w-64"
       )}>
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full overflow-y-auto">
           {/* Header */}
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
@@ -80,9 +83,17 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
                 variant="ghost"
                 size="sm"
                 onClick={() => setIsCollapsed(!isCollapsed)}
-                className="bg-blue-600 text-white hover:bg-blue-500 hover:text-white"
+                className="hidden lg:flex bg-blue-600 text-white hover:bg-blue-500 hover:text-white"
               >
                 {isCollapsed ? <Menu className="w-4 h-4" /> : <X className="w-4 h-4" />}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onMobileClose}
+                className="lg:hidden bg-white text-black hover:bg-gray-100 border border-gray-200"
+              >
+                <X className="w-5 h-5" style={{ stroke: '#000000', color: '#000000' }} />
               </Button>
             </div>
           </div>
@@ -108,7 +119,8 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
                         clearUnreadMessages();
                       }
                       onPageChange(item.id);
-                      navigate("/" + item.id)
+                      navigate("/" + item.id);
+                      onMobileClose(); // Close sidebar on mobile after clicking
                     }
                   }
                 >

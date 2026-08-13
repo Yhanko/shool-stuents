@@ -12,8 +12,13 @@ import { User, LogOut, Settings } from '../lib/icons';
 import { useStudent } from '@/contexts/StudentContext';
 import { useAuthStore } from '@/store/authStore';
 import { useNavigate } from 'react-router-dom';
+import { Menu } from 'lucide-react';
 
-export function Header() {
+interface HeaderProps {
+  onMenuClick?: () => void;
+}
+
+export function Header({ onMenuClick }: HeaderProps) {
   const { student } = useStudent();
   const logout = useAuthStore(state => state.logout);
   const navigate = useNavigate();
@@ -26,18 +31,23 @@ export function Header() {
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4 w-full">
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold text-gray-900">
-            Bem-vindo, {student.name}!
-          </h2>
-          <p className="text-sm text-gray-600">
-            {new Date().toLocaleDateString('pt-BR', { 
-              weekday: 'long', 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
-            })}
-          </p>
+        <div className="flex items-center gap-4">
+          <Button variant="outline" size="icon" className="lg:hidden bg-white border border-gray-200 text-black hover:bg-gray-100 shadow-sm" onClick={onMenuClick}>
+            <Menu color="black" className="w-6 h-6  text-black" />
+          </Button>
+          <div>
+            <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">
+              Bem-vindo, {student.name}!
+            </h2>
+            <p className="text-sm text-gray-600">
+              {new Date().toLocaleDateString('pt-BR', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              })}
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center space-x-4">
