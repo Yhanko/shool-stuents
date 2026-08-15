@@ -55,6 +55,7 @@ export function StudentProvider({ children }: { children: ReactNode }) {
           classId: profile.classes && profile.classes.length > 0 ? profile.classes[0].id : '',
           year: profile.classes && profile.classes.length > 0 ? profile.classes[0].period : 'N/A',
           enrollmentNumber: profile.enrollmentNumber || '2026' + profile.id.replace(/\D/g, '').padEnd(4, '0').substring(0, 4),
+          avatar: profile.employeeProfile?.photoUrl || profile.avatar,
         };
         
         setStudent(formattedProfile);

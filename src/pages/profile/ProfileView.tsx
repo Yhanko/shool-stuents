@@ -73,16 +73,33 @@ export function ProfileView() {
     }
   }, [student, isEditing, profileForm]);
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Optimização visual imediata
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64String = reader.result as string;
         updateStudentData({ avatar: base64String });
-        toast.success('Foto atualizada com sucesso!');
       };
       reader.readAsDataURL(file);
+
+      // Upload real para Cloudinary e guardar na API
+      try {
+        const uploadRes = await studentService.uploadFile(file);
+        const fileUrl = uploadRes.path || uploadRes.url;
+        
+        if (fileUrl) {
+          await studentService.updateProfile({ 
+            employeeProfile: { photoUrl: fileUrl } 
+          });
+          toast.success('Foto atualizada com sucesso!');
+        } else {
+          throw new Error('Falha ao obter o URL da imagem.');
+        }
+      } catch (error) {
+        toast.error('Erro ao atualizar a foto no servidor.');
+      }
     }
   };
 
