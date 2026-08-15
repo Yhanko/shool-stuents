@@ -15,8 +15,10 @@ import {
   Menu,
   X,
   TrendingUp,
+  LogOut,
 } from '../lib/icons';
 import { useStudent } from '@/contexts/StudentContext';
+import { useAuthStore } from '@/store/authStore';
 import { useNavigate } from "react-router-dom";
 
 interface SidebarProps {
@@ -42,6 +44,7 @@ const menuItems = [
 export function Sidebar({ currentPage, onPageChange, isMobileOpen, onMobileClose }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { student, unreadMessages, unreadNotifications, clearUnreadMessages } = useStudent();
+  const logout = useAuthStore((state) => state.logout);
   const navigate = useNavigate();
   const getNotificationCount = (itemId: string) => {
     if (itemId === 'chat') return unreadMessages;
@@ -147,11 +150,25 @@ export function Sidebar({ currentPage, onPageChange, isMobileOpen, onMobileClose
           {/* Footer */}
           <div className="p-4 border-t border-border bg-card">
             {!isCollapsed && (
-              <div className="text-center">
+              <div className="text-center mb-4">
                 <p className="text-xs text-muted-foreground label-caps uppercase tracking-wider">Ano Letivo</p>
                 <p className="text-sm font-medium text-foreground mt-1 data-mono">{student.year}</p>
               </div>
             )}
+            <Button
+              variant="outline"
+              className={cn(
+                "w-full justify-center text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 transition-colors",
+                isCollapsed ? "px-2 py-2" : "gap-2"
+              )}
+              onClick={() => {
+                logout();
+                navigate("/");
+              }}
+            >
+              <LogOut className="w-5 h-5" />
+              {!isCollapsed && <span>Sair</span>}
+            </Button>
           </div>
         </div>
       </aside>

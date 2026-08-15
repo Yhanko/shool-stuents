@@ -22,6 +22,16 @@ import {
   Loader2
 } from '../../lib/icons';
 
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+} from "@/components/ui/form";
+
 interface Conversa {
   id: string;
   nome: string;
@@ -41,16 +51,26 @@ interface Mensagem {
   minha: boolean;
 }
 
+const messageSchema = z.object({
+  content: z.string().min(1, "A mensagem não pode estar vazia"),
+});
+
 export function MessagesView () {
   const { student } = useStudent();
   const [conversas, setConversas] = useState<Conversa[]>([]);
   const [conversaSelecionadaId, setConversaSelecionadaId] = useState<string | null>(null);
   const [mensagens, setMensagens] = useState<Mensagem[]>([]);
   
-  const [novaMensagem, setNovaMensagem] = useState('');
   const [busca, setBusca] = useState('');
   const [isLoadingContacts, setIsLoadingContacts] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+
+  const messageForm = useForm<z.infer<typeof messageSchema>>({
+    resolver: zodResolver(messageSchema),
+    defaultValues: {
+      content: "",
+    },
+  });
 
   useEffect(() => {
     fetchContacts();
@@ -128,13 +148,16 @@ export function MessagesView () {
     }
   };
 
-  const enviarMensagem = async () => {
-    if (!novaMensagem.trim() || !conversaSelecionada) return;
+  const enviarMensagem = async (values: z.infer<typeof messageSchema>) => {
+    if (!conversaSelecionada) return;
+
+    const textoMensagem = values.content.trim();
+    if (!textoMensagem) return;
 
     const mensagemTemp: Mensagem = {
       id: Date.now().toString(),
       remetente: 'Você',
-      conteudo: novaMensagem,
+      conteudo: textoMensagem,
       hora: format(new Date(), "HH:mm", { locale: ptBR }),
       minha: true
     };
@@ -144,12 +167,11 @@ export function MessagesView () {
     // Atualiza a ultima mensagem na barra lateral otimisticamente
     setConversas(prev => prev.map(c => 
       c.id === conversaSelecionada.id 
-      ? { ...c, ultimaMensagem: novaMensagem, hora: mensagemTemp.hora } 
+      ? { ...c, ultimaMensagem: textoMensagem, hora: mensagemTemp.hora } 
       : c
     ));
     
-    const textoMensagem = novaMensagem;
-    setNovaMensagem('');
+    messageForm.reset();
 
     try {
       await studentService.sendMessage({
@@ -336,13 +358,13 @@ export function MessagesView () {
                           <div
                             className={`max-w-[70%] p-3 rounded-lg ${
                               mensagem.minha
-                                ? 'bg-blue-600 text-white'
+                                ? 'bg-primary text-primary-foreground'
                                 : 'bg-muted'
                             }`}
                           >
                             <p className="text-sm">{mensagem.conteudo}</p>
                             <p className={`text-xs mt-1 ${
-                              mensagem.minha ? 'text-blue-100' : 'text-muted-foreground'
+                              mensagem.minha ? 'text-primary-foreground/80' : 'text-muted-foreground'
                             }`}>
                               {mensagem.hora}
                             </p>
@@ -354,18 +376,28 @@ export function MessagesView () {
                 </ScrollArea>
 
                 <div className="p-4 border-t">
-                  <div className="flex space-x-2">
-                    <Input
-                      placeholder="Digite sua mensagem..."
-                      value={novaMensagem}
-                      onChange={(e) => setNovaMensagem(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && enviarMensagem()}
-                      className="flex-1"
-                    />
-                    <Button onClick={enviarMensagem} className='bg-green-500 hover:bg-green-600'>
-                      <Send className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <Form {...messageForm}>
+                    <form onSubmit={messageForm.handleSubmit(enviarMensagem)} className="flex space-x-2">
+                      <FormField
+                        control={messageForm.control}
+                        name="content"
+                        render={({ field }) => (
+                          <FormItem className="flex-1">
+                            <FormControl>
+                              <Input
+                                placeholder="Digite sua mensagem..."
+                                {...field}
+                                className="flex-1"
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      <Button type="submit" className='bg-primary hover:bg-primary/90 text-primary-foreground'>
+                        <Send className="h-4 w-4" />
+                      </Button>
+                    </form>
+                  </Form>
                 </div>
               </CardContent>
             </>

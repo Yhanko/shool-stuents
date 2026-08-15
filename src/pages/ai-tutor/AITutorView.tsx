@@ -10,6 +10,16 @@ import { studentService } from '@/services/api/studentService';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+} from "@/components/ui/form";
+
 interface AIMessage {
   id: string;
   type: 'user' | 'ai';
@@ -17,6 +27,10 @@ interface AIMessage {
   timestamp: string;
   subject?: string;
 }
+
+const aiChatSchema = z.object({
+  message: z.string().min(1, "A mensagem não pode estar vazia"),
+});
 
 export function AITutorView() {
   const { student, subjects } = useStudent();
@@ -28,13 +42,19 @@ export function AITutorView() {
       timestamp: new Date().toISOString()
     }
   ]);
-  const [currentMessage, setCurrentMessage] = useState('');
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [isTyping, setIsTyping] = useState(false);
 
   const [aiAnalysis, setAiAnalysis] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [quickQuestions, setQuickQuestions] = useState<{ texto: string, categoria: string }[]>([]);
+
+  const aiChatForm = useForm<z.infer<typeof aiChatSchema>>({
+    resolver: zodResolver(aiChatSchema),
+    defaultValues: {
+      message: "",
+    },
+  });
 
   useEffect(() => {
     const fetchAnalysis = async () => {
@@ -76,8 +96,9 @@ export function AITutorView() {
   const weakSubjects = aiAnalysis?.weaknesses || [];
   const strongSubjects = aiAnalysis?.strengths || [];
 
-  const handleSendMessage = async () => {
-    if (!currentMessage.trim()) return;
+  const handleSendMessage = async (values: z.infer<typeof aiChatSchema>) => {
+    const currentMessage = values.message.trim();
+    if (!currentMessage) return;
 
     const userMessage: AIMessage = {
       id: Date.now().toString(),
@@ -88,7 +109,7 @@ export function AITutorView() {
     };
 
     setMessages(prev => [...prev, userMessage]);
-    setCurrentMessage('');
+    aiChatForm.reset();
     setIsTyping(true);
 
     // Enviar mensagem real para o backend
@@ -183,7 +204,7 @@ export function AITutorView() {
                     variant="outline"
                     size="sm"
                     className="w-full text-left justify-start h-auto p-2 text-xs whitespace-normal"
-                    onClick={() => setCurrentMessage(question.texto)}
+                    onClick={() => aiChatForm.setValue('message', question.texto)}
                   >
                     {question.texto}
                   </Button>
@@ -227,7 +248,7 @@ export function AITutorView() {
                     className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
                     <div className={`max-w-xs lg:max-w-md xl:max-w-lg px-4 py-2 rounded-lg ${message.type === 'user'
-                        ? 'bg-blue-600 text-white'
+                        ? 'bg-primary text-primary-foreground'
                         : 'bg-gray-100 text-gray-900'
                       }`}>
                       {message.type === 'ai' && (
@@ -275,21 +296,32 @@ export function AITutorView() {
             </CardContent>
 
             <div className="border-t p-3 bg-white mt-auto rounded-b-xl">
-              <div className="flex gap-2">
-                <Input
-                  value={currentMessage}
-                  onChange={(e) => setCurrentMessage(e.target.value)}
-                  placeholder={`Faça uma pergunta${selectedSubject ? ` sobre ${selectedSubject}` : ''}...`}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                  disabled={isTyping}
-                />
-                <Button
-                  onClick={handleSendMessage}
-                  disabled={!currentMessage.trim() || isTyping}
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
-              </div>
+              <Form {...aiChatForm}>
+                <form onSubmit={aiChatForm.handleSubmit(handleSendMessage)} className="flex gap-2">
+                  <FormField
+                    control={aiChatForm.control}
+                    name="message"
+                    render={({ field }) => (
+                      <FormItem className="flex-1">
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder={`Faça uma pergunta${selectedSubject ? ` sobre ${selectedSubject}` : ''}...`}
+                            disabled={isTyping}
+                            className="flex-1"
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <Button
+                    type="submit"
+                    disabled={isTyping}
+                  >
+                    <Send className="w-4 h-4" />
+                  </Button>
+                </form>
+              </Form>
             </div>
           </Card>
 
