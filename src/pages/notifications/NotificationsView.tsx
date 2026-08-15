@@ -103,7 +103,7 @@ export function NotificationsView() {
         </div>
 
         <div className="flex gap-3">
-          <Button variant="outline" onClick={markAllAsRead}>
+          <Button onClick={markAllAsRead}>
             Marcar Todas como Lidas
           </Button>
         </div>

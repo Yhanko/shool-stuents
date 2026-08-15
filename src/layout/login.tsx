@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Mail, Lock, Eye, EyeOff, GraduationCap, Loader2, ArrowLeft,
+  Mail, Lock, Eye, EyeOff, Loader2, ArrowLeft,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -108,24 +108,14 @@ export function Login() {
         initial={{ opacity: 0, y: 28 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, ease: "easeOut" }}
-        className="relative z-10 w-[95%] sm:w-full max-w-lg md:max-w-xl lg:max-w-2xl"
+        className="relative z-10 w-[95%] sm:w-full max-w-md"
       >
         <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl shadow-slate-900/10 dark:shadow-black/40 border border-slate-100 dark:border-slate-800 overflow-hidden">
-          {/* Top accent bar */}
-          <div className="h-1.5 w-full bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500" />
+
 
           <div className="px-6 sm:px-10 md:px-12 py-10 sm:py-12">
             {/* Logo + title */}
             <div className="flex flex-col items-center text-center mb-10">
-              <motion.div
-                initial={{ scale: 0.75 }}
-                animate={{ scale: 1 }}
-                transition={{ type: "spring", bounce: 0.45, delay: 0.15 }}
-                className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30 mb-5"
-              >
-                <GraduationCap className="w-8 h-8 text-white" />
-              </motion.div>
-
               <AnimatePresence mode="wait">
                 {!isRecovering ? (
                   <motion.div key="title-login"
@@ -236,7 +226,7 @@ export function Login() {
 
                   <Button
                     type="submit"
-                    className="w-full py-3.5 h-auto rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold text-sm shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all duration-200"
+                    className="w-full py-3.5 h-auto rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all duration-200"
                     disabled={isLoading}
                   >
                     {isLoading
@@ -275,7 +265,7 @@ export function Login() {
 
                   <Button
                     type="submit"
-                    className="w-full py-3.5 h-auto rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold text-sm shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all duration-200"
+                    className="w-full py-3.5 h-auto rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all duration-200"
                     disabled={isLoading}
                   >
                     {isLoading
@@ -347,7 +337,7 @@ export function Login() {
 
                   <Button
                     type="submit"
-                    className="w-full py-3.5 h-auto rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold text-sm shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all duration-200"
+                    className="w-full py-3.5 h-auto rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all duration-200"
                     disabled={isLoading}
                   >
                     {isLoading

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +26,22 @@ export function ProfileView() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        // Se houver backend, fazer requisição aqui para upload. 
+        // Por agora, atualizamos o state global.
+        updateStudentData({ avatar: base64String });
+        toast.success('Foto atualizada com sucesso!');
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleSaveProfile = async () => {
     try {
@@ -74,13 +90,25 @@ export function ProfileView() {
           <Card>
             <CardContent className="p-6 text-center">
               <div className="relative inline-block mb-4">
-                <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-4xl font-bold mx-auto">
-                  {student.name.split(' ').map(n => n[0]).join('')}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  ref={fileInputRef}
+                  onChange={handlePhotoChange}
+                />
+                <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-4xl font-bold mx-auto overflow-hidden">
+                  {student.avatar ? (
+                    <img src={student.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    student.name.split(' ').map(n => n[0]).join('')
+                  )}
                 </div>
                 <Button
                   size="sm"
                   className="absolute bottom-0 right-0 rounded-full w-10 h-10 p-0"
                   variant="secondary"
+                  onClick={() => fileInputRef.current?.click()}
                 >
                   <Camera className="w-4 h-4" />
                 </Button>
@@ -260,7 +288,7 @@ export function ProfileView() {
                   </div>
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button variant="outline">
+                      <Button>
                         <Lock className="w-4 h-4 mr-2" />
                         Alterar Palavra-passe
                       </Button>

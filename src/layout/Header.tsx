@@ -29,17 +29,17 @@ export function Header({ onMenuClick }: HeaderProps) {
   };
 
   return (
-    <header className="bg-white border-b border-gray-200 px-6 py-4 w-full">
+    <header className="bg-card border-b border-border px-6 py-4 w-full shadow-md shadow-black/10">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" className="lg:hidden bg-white border border-gray-200 text-black hover:bg-gray-100 shadow-sm" onClick={onMenuClick}>
-            <Menu color="black" className="w-6 h-6  text-black" />
+          <Button variant="outline" size="icon" className="lg:hidden bg-card border border-border text-foreground hover:bg-muted shadow-sm" onClick={onMenuClick}>
+            <Menu className="w-6 h-6 text-foreground" />
           </Button>
           <div>
-            <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">
+            <h2 className="text-xl sm:text-2xl font-semibold text-foreground tracking-tight">
               Bem-vindo, {student.name}!
             </h2>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               {new Date().toLocaleDateString('pt-BR', {
                 weekday: 'long',
                 year: 'numeric',

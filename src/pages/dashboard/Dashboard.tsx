@@ -31,18 +31,18 @@ export function Dashboard() {
   return (
     <div className="space-y-6">
       {/* Welcome Section */}
-      <div className="bg-blue-600  rounded-xl p-6 text-white">
+      <div className="bg-primary rounded-xl p-6 text-primary-foreground">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold mb-2">
               Bem-vindo, {student.name.split(' ')[0]}! 👋
             </h1>
-            <p className="text-blue-100">
+            <p className="text-primary-foreground/80">
               Aqui está um resumo das suas atividades acadêmicas
             </p>
           </div>
           <div className="text-right">
-            <p className="text-sm text-blue-100">Turma</p>
+            <p className="text-sm text-primary-foreground/80">Turma</p>
             <p className="text-lg font-semibold">{student.class}</p>
           </div>
         </div>

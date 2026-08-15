@@ -19,7 +19,7 @@ export function Layout() {
 
   return (
     <StudentProvider>
-      <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950 w-full">
+      <div className="flex min-h-screen bg-background text-foreground w-full">
         <Sidebar 
           currentPage={currentPage} 
           onPageChange={setCurrentPage} 

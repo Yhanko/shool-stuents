@@ -53,29 +53,25 @@ export function Sidebar({ currentPage, onPageChange, isMobileOpen, onMobileClose
     <>
       {/* Mobile overlay */}
       {isMobileOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
           onClick={onMobileClose}
         />
       )}
-      
+
       <aside className={cn(
-        "fixed lg:sticky left-0 top-0 h-screen bg-white border-r border-gray-200 transition-all duration-300 z-50 flex-shrink-0",
+        "fixed lg:sticky left-0 top-0 h-screen bg-card border-r border-border transition-all duration-300 z-50 flex-shrink-0 shadow-lg shadow-black/20",
         isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
         isCollapsed ? "w-64 lg:w-20" : "w-64"
       )}>
         <div className="flex flex-col h-full overflow-y-auto">
           {/* Header */}
-          <div className="p-4 border-b border-gray-200">
+          <div className="p-4 border-b border-border">
             <div className="flex items-center justify-between">
               {!isCollapsed && (
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg flex items-center justify-center">
-                    <GraduationCap className="w-5 h-5 text-white" />
-                  </div>
                   <div>
-                    <h2 className="font-semibold text-gray-900">Portal do Aluno</h2>
-                    
+                    <h2 className="font-semibold text-foreground tracking-tight">Portal do Aluno</h2>
                   </div>
                 </div>
               )}
@@ -83,7 +79,7 @@ export function Sidebar({ currentPage, onPageChange, isMobileOpen, onMobileClose
                 variant="ghost"
                 size="sm"
                 onClick={() => setIsCollapsed(!isCollapsed)}
-                className="hidden lg:flex bg-blue-600 text-white hover:bg-blue-500 hover:text-white"
+                className="hidden lg:flex bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 {isCollapsed ? <Menu className="w-4 h-4" /> : <X className="w-4 h-4" />}
               </Button>
@@ -91,9 +87,9 @@ export function Sidebar({ currentPage, onPageChange, isMobileOpen, onMobileClose
                 variant="ghost"
                 size="sm"
                 onClick={onMobileClose}
-                className="lg:hidden bg-white text-black hover:bg-gray-100 border border-gray-200"
+                className="lg:hidden bg-card text-foreground hover:bg-muted border border-border"
               >
-                <X className="w-5 h-5" style={{ stroke: '#000000', color: '#000000' }} />
+                <X className="w-5 h-5" />
               </Button>
             </div>
           </div>
@@ -107,11 +103,11 @@ export function Sidebar({ currentPage, onPageChange, isMobileOpen, onMobileClose
               return (
                 <Button
                   key={item.id}
-                  variant={isActive ? "secondary" : "ghost"}
+                  variant="ghost"
                   className={cn(
-                    "w-full justify-start relative bg-white text-black border border-blue-600",
+                    "w-full justify-start relative text-foreground border-transparent hover:bg-gray-100 hover:text-foreground transition-all",
                     isCollapsed ? "px-2" : "px-3",
-                    isActive && "bg-blue-600 text-white hover:bg-blue-700 flex justify-center"
+                    isActive ? "bg-white border-l-[3px] border-l-primary shadow-sm" : "bg-transparent"
                   )}
                   onClick={
                     () => {
@@ -124,18 +120,20 @@ export function Sidebar({ currentPage, onPageChange, isMobileOpen, onMobileClose
                     }
                   }
                 >
-                  <Icon className={cn("w-5 h-5", isCollapsed ? "mx-auto" : "mr-3")} />
+                  <div className={cn("relative flex items-center justify-center", isCollapsed ? "mx-auto" : "mr-3")}>
+                    <Icon className={cn("w-5 h-5 relative z-10", isActive && "text-primary")} />
+                  </div>
                   {!isCollapsed && <span>{item.label}</span>}
-                  
+
                   {!isCollapsed && notificationCount > 0 && (
-                    <Badge 
-                      variant="destructive" 
+                    <Badge
+                      variant="destructive"
                       className="ml-auto h-5 w-5 flex items-center justify-center p-0 text-xs"
                     >
                       {notificationCount}
                     </Badge>
                   )}
-                  
+
                   {isCollapsed && notificationCount > 0 && (
                     <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs">
                       {notificationCount}
@@ -147,11 +145,11 @@ export function Sidebar({ currentPage, onPageChange, isMobileOpen, onMobileClose
           </nav>
 
           {/* Footer */}
-          <div className="p-4 border-t border-gray-200">
+          <div className="p-4 border-t border-border bg-card">
             {!isCollapsed && (
               <div className="text-center">
-                <p className="text-xs text-gray-500">Ano Letivo</p>
-                <p className="text-sm font-medium text-gray-900">{student.year}</p>
+                <p className="text-xs text-muted-foreground label-caps uppercase tracking-wider">Ano Letivo</p>
+                <p className="text-sm font-medium text-foreground mt-1 data-mono">{student.year}</p>
               </div>
             )}
           </div>
