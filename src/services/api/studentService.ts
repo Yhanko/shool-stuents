@@ -150,6 +150,8 @@ export const studentService = {
       const response = await api.get('/notifications');
       return response.data.map((n: any) => ({
         ...n,
+        message: n.description || n.message,
+        read: n.isRead !== undefined ? n.isRead : n.read,
         date: n.createdAt,
       }));
     } catch {
