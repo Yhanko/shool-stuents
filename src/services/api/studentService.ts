@@ -7,7 +7,7 @@ export const studentService = {
     return response.data;
   },
 
-  updateProfile: async (data: Partial<Student>) => {
+  updateProfile: async (data: Partial<Student> | Record<string, any>) => {
     const response = await api.patch('/users/me', data);
     return response.data;
   },

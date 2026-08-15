@@ -93,6 +93,9 @@ export function ProfileView() {
           await studentService.updateProfile({ 
             employeeProfile: { photoUrl: fileUrl } 
           });
+          if (student?.id) {
+            localStorage.setItem(`yhanko_avatar_${student.id}`, fileUrl);
+          }
           toast.success('Foto atualizada com sucesso!');
         } else {
           throw new Error('Falha ao obter o URL da imagem.');
