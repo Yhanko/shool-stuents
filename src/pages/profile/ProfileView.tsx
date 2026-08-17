@@ -321,7 +321,7 @@ export function ProfileView() {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label>Número de Estudante</Label>
+                  <Label>Número de Aluno</Label>
                   <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-md">
                     <Hash className="w-4 h-4 text-gray-500" />
                     <span>{student.enrollmentNumber}</span>
