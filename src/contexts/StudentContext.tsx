@@ -13,6 +13,7 @@ interface StudentContextType {
   payments: Payment[];
   notifications: Notification[];
   attendances: Attendance[];
+  pautaData: any;
   unreadMessages: number;
   unreadNotifications: number;
   markMessageAsRead: (messageId: string) => void;
@@ -34,6 +35,7 @@ export function StudentProvider({ children }: { children: ReactNode }) {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [attendances, setAttendances] = useState<Attendance[]>([]);
+  const [pautaData, setPautaData] = useState<any>(null);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -87,12 +89,14 @@ export function StudentProvider({ children }: { children: ReactNode }) {
 
         // Grades and Attendances require classId which we get from profile
         if (formattedProfile.classId) {
-           const [fetchedGrades, fetchedAttendances] = await Promise.all([
+           const [fetchedGrades, fetchedAttendances, fetchedPauta] = await Promise.all([
              studentService.getGrades(formattedProfile.id, formattedProfile.classId),
-             studentService.getAttendances(formattedProfile.id, formattedProfile.classId)
+             studentService.getAttendances(formattedProfile.id, formattedProfile.classId),
+             studentService.getPauta(formattedProfile.id, formattedProfile.classId)
            ]);
            setGrades(fetchedGrades || []);
            setAttendances(fetchedAttendances || []);
+           setPautaData(fetchedPauta);
         }
 
       } catch (error) {
@@ -170,6 +174,7 @@ export function StudentProvider({ children }: { children: ReactNode }) {
       payments,
       notifications,
       attendances,
+      pautaData,
       unreadMessages,
       unreadNotifications,
       markMessageAsRead,

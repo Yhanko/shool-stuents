@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useStudent } from '@/contexts/StudentContext';
-import { BookOpen, Download, Search, FileText, Video, Link, Gamepad2, Calendar, Eye } from '../../lib/icons';
+import { BookOpen, Download, Search, FileText, Video, Link, Gamepad2, Calendar } from '../../lib/icons';
 import { studentService } from '@/services/api/studentService';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -21,10 +21,22 @@ export function ResourcesView() {
 
   useEffect(() => {
     const loadResources = async () => {
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+      const formatUrl = (url: string) => {
+        if (!url) return '';
+        if (url.startsWith('/')) return `${baseUrl}${url}`;
+        if (!url.startsWith('http')) return `https://${url}`;
+        return url;
+      };
+
       try {
         setIsLoading(true);
         const data = await studentService.getResources();
-        setResources(data);
+        const formattedData = data.map((r: any) => ({
+          ...r,
+          url: formatUrl(r.url)
+        }));
+        setResources(formattedData);
       } catch (error) {
         console.error('Failed to load resources:', error);
       } finally {
@@ -219,8 +231,13 @@ export function ResourcesView() {
                       size="sm"
                       className="flex-1 bg-blue-600 hover:bg-blue-700"
                       onClick={() => {
+                        let finalDownloadUrl = resource.url;
+                        if (finalDownloadUrl.includes('cloudinary.com') && finalDownloadUrl.includes('/upload/')) {
+                          finalDownloadUrl = finalDownloadUrl.replace('/upload/', '/upload/fl_attachment/');
+                        }
+                        
                         const link = document.createElement('a');
-                        link.href = resource.url;
+                        link.href = finalDownloadUrl;
                         link.download = resource.title || 'download';
                         link.target = '_blank';
                         document.body.appendChild(link);
@@ -231,13 +248,29 @@ export function ResourcesView() {
                       <Download className="w-4 h-4 mr-2" />
                       Download
                     </Button>
-                    <Button
+                      <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => window.open(resource.url, '_blank')}
+                      onClick={async () => {
+                        try {
+                          const res = await fetch(resource.url);
+                          if (!res.ok) throw new Error('Failed to fetch file');
+                          const blob = await res.blob();
+                          const blobUrl = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = blobUrl;
+                          a.download = resource.title + (resource.type === 'pdf' ? '.pdf' : '');
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                          URL.revokeObjectURL(blobUrl);
+                        } catch (error) {
+                          window.open(resource.url, '_blank');
+                        }
+                      }}
                     >
-                      <Eye className="w-4 h-4 mr-2" />
-                      Visualizar
+                      <Download className="w-4 h-4 mr-2" />
+                      Baixar
                     </Button>
                   </div>
 
@@ -245,10 +278,26 @@ export function ResourcesView() {
                   <Button
                     variant="outline"
                     className='w-full'
-                    onClick={() => window.open(resource.url, '_blank')}
+                    onClick={async () => {
+                      try {
+                        const res = await fetch(resource.url);
+                        if (!res.ok) throw new Error('Failed to fetch file');
+                        const blob = await res.blob();
+                        const blobUrl = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = blobUrl;
+                        a.download = resource.title + (resource.type === 'pdf' ? '.pdf' : '');
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(blobUrl);
+                      } catch (error) {
+                        window.open(resource.url, '_blank');
+                      }
+                    }}
                   >
-                    <Eye className="w-4 h-4 mr-2" />
-                    Acessar
+                    <Download className="w-4 h-4 mr-2" />
+                    Baixar
                   </Button>
                 )}
               </div>

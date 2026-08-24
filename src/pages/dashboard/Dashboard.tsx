@@ -17,13 +17,17 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export function Dashboard() {
-  const { student, subjects, grades, events, payments, messages } = useStudent();
+  const { student, subjects, events, payments, messages, pautaData } = useStudent();
 
   const navigate = useNavigate();
 
-  const averageGrade = grades.length > 0 
-    ? grades.reduce((acc, grade) => acc + grade.grade, 0) / grades.length 
-    : 0;
+  let averageGrade = 0;
+  if (pautaData && pautaData.subjects) {
+    const subjectsWithMfd = pautaData.subjects.filter((s: any) => s.final.mfd !== null);
+    if (subjectsWithMfd.length > 0) {
+      averageGrade = subjectsWithMfd.reduce((acc: number, s: any) => acc + s.final.mfd, 0) / subjectsWithMfd.length;
+    }
+  }
   const upcomingEvents = events.filter(event => new Date(event.date) > new Date()).slice(0, 3);
   const pendingPayments = payments.filter(payment => payment.status === 'pending');
   const recentMessages = messages.slice(0, 3);
@@ -51,11 +55,11 @@ export function Dashboard() {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard
-          title="Média Geral"
-          value={averageGrade > 0 ? averageGrade.toFixed(1) : "-"}
+          title="Média Geral (MFD)"
+          value={averageGrade > 0 ? averageGrade.toFixed(1).replace('.', ',') : '-'}
           icon={GraduationCap}
           color="bg-blue-500"
-          description={grades.length > 0 ? "Baseado nas notas atuais" : "Sem notas registadas"}
+          description={pautaData?.subjects?.some((s: any) => s.final.mfd !== null) ? "Baseado nas médias finais" : "Sem médias finais calculadas"}
         />
         <StatsCard
           title="Disciplinas"

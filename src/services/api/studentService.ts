@@ -43,6 +43,15 @@ export const studentService = {
     }
   },
 
+  getPauta: async (studentId: string, classId: string) => {
+    try {
+      const response = await api.get(`/grades/pauta/student/${studentId}/class/${classId}`);
+      return response.data;
+    } catch {
+      return null;
+    }
+  },
+
   getAttendances: async (studentId: string, classId: string) => {
     try {
       const response = await api.get(`/attendance/student/${studentId}/class/${classId}`);
@@ -171,11 +180,25 @@ export const studentService = {
 
   getResources: async () => {
     try {
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+      const formatUrl = (url: string) => {
+        if (!url) return '';
+        let finalUrl = url;
+        if (url.startsWith('/')) finalUrl = `${baseUrl}${url}`;
+        else if (!url.startsWith('http')) finalUrl = `https://${url}`;
+        
+        if (finalUrl.includes('res.cloudinary.com') && finalUrl.includes('/upload/') && !finalUrl.includes('fl_attachment')) {
+            finalUrl = finalUrl.replace('/upload/', '/upload/fl_attachment/');
+        }
+        return finalUrl;
+      };
+
       const response = await api.get('/resources');
       return response.data.map((r: any) => ({
         ...r,
         subject: r.subject?.name || 'Geral',
         className: r.class?.name || 'Geral',
+        url: formatUrl(r.url)
       }));
     } catch {
       return [];
