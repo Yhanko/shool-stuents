@@ -17,7 +17,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export function Dashboard() {
-  const { student, subjects, events, payments, messages, pautaData } = useStudent();
+  const { student, subjects, events, payments, pautaData, contacts, unreadMessages } = useStudent();
 
   const navigate = useNavigate();
 
@@ -30,7 +30,13 @@ export function Dashboard() {
   }
   const upcomingEvents = events.filter(event => new Date(event.date) > new Date()).slice(0, 3);
   const pendingPayments = payments.filter(payment => payment.status === 'pending');
-  const recentMessages = messages.slice(0, 3);
+  const recentMessages = contacts ? contacts.slice(0, 3).map((c: any) => ({
+    id: c.id,
+    sender: c.nome || c.name || 'Sem Nome',
+    subject: c.ultimaMensagem || '',
+    date: c.hora || new Date().toISOString(),
+    read: c.naoLidas === 0
+  })) : [];
 
   return (
     <div className="space-y-6">
@@ -77,7 +83,7 @@ export function Dashboard() {
         />
         <StatsCard
           title="Mensagens"
-          value={messages.filter(m => !m.read).length}
+          value={unreadMessages}
           icon={MessageSquare}
           color="bg-purple-500"
           description="Mensagens não lidas"
@@ -112,13 +118,6 @@ export function Dashboard() {
                 </div>
               </div>
             ))}
-            <Button 
-              variant="outline" 
-              className="w-full"
-              onClick={() => navigate('performance')}
-            >
-              Ver Detalhes Completos
-            </Button>
           </CardContent>
         </Card>
 
@@ -149,13 +148,6 @@ export function Dashboard() {
                 </div>
               </div>
             ))}
-            <Button 
-              variant="outline" 
-              className="w-full"
-              onClick={() => navigate('calendar')}
-            >
-              Ver Calendário Completo
-            </Button>
           </CardContent>
         </Card>
       </div>
@@ -174,7 +166,7 @@ export function Dashboard() {
               <div key={message.id} className="flex items-start gap-3 p-3 rounded-lg bg-gray-50">
                 <div className="flex-shrink-0">
                   <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-medium">
-                    {message.sender.split(' ').map(n => n[0]).join('')}
+                    {message.sender.split(' ').map((n: string) => n[0]).join('')}
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
@@ -191,13 +183,6 @@ export function Dashboard() {
                 </div>
               </div>
             ))}
-            <Button 
-              variant="outline" 
-              className="w-full"
-              onClick={() => navigate('messages')}
-            >
-              Ver Todas as Mensagens
-            </Button>
           </CardContent>
         </Card>
 

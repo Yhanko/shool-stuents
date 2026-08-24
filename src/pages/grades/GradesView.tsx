@@ -105,53 +105,76 @@ export function GradesView() {
       <Card className="overflow-hidden border shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
-            <thead className="bg-gray-50 border-b">
+            <thead className="bg-gray-50 border-b text-xs">
               <tr>
-                <th className="px-4 py-3 font-medium text-gray-700 w-48">Disciplina</th>
-                <th className="px-4 py-3 text-center border-l font-medium text-gray-700">MT1</th>
-                <th className="px-4 py-3 text-center border-l font-medium text-gray-700">MT2</th>
-                <th className="px-4 py-3 text-center border-l font-medium text-gray-700">MT3</th>
+                <th rowSpan={2} className="px-4 py-3 font-medium text-gray-700 w-48 border-r">Disciplina</th>
+                <th colSpan={3} className="px-4 py-2 text-center border-b border-r font-medium text-gray-700">1º Trimestre</th>
+                <th colSpan={3} className="px-4 py-2 text-center border-b border-r font-medium text-gray-700">2º Trimestre</th>
+                <th colSpan={3} className="px-4 py-2 text-center border-b border-r font-medium text-gray-700">3º Trimestre</th>
+                {isExamClass && (
+                  <th colSpan={3} className="px-4 py-2 text-center border-b border-r font-medium text-gray-700">Exames</th>
+                )}
+                <th rowSpan={2} className="px-4 py-3 text-center font-semibold text-gray-900 bg-gray-100 border-l">MFD</th>
+              </tr>
+              <tr>
+                <th className="px-2 py-2 text-center border-r font-medium text-gray-600 bg-white" title="Avaliação Contínua">MAC</th>
+                <th className="px-2 py-2 text-center border-r font-medium text-gray-600 bg-white" title="Nota da Prova Trimestral">NPT</th>
+                <th className="px-2 py-2 text-center border-r font-medium text-gray-600 bg-gray-50">MT1</th>
+
+                <th className="px-2 py-2 text-center border-r font-medium text-gray-600 bg-white" title="Avaliação Contínua">MAC</th>
+                <th className="px-2 py-2 text-center border-r font-medium text-gray-600 bg-white" title="Nota da Prova Trimestral">NPT</th>
+                <th className="px-2 py-2 text-center border-r font-medium text-gray-600 bg-gray-50">MT2</th>
+
+                <th className="px-2 py-2 text-center border-r font-medium text-gray-600 bg-white" title="Avaliação Contínua">MAC</th>
+                <th className="px-2 py-2 text-center border-r font-medium text-gray-600 bg-white" title="Nota da Prova Trimestral">NPT</th>
+                <th className="px-2 py-2 text-center border-r font-medium text-gray-600 bg-gray-50">MT3</th>
+
                 {isExamClass && (
                   <>
-                    <th className="px-4 py-3 text-center border-l font-medium text-gray-700" title="Nota de Exame Escrito">NEE</th>
-                    <th className="px-4 py-3 text-center border-l font-medium text-gray-700" title="Nota de Exame Oral">NEO</th>
-                    <th className="px-4 py-3 text-center border-l font-medium text-gray-700" title="Média de Exame Nacional Combinado">MENC</th>
+                    <th className="px-2 py-2 text-center border-r font-medium text-gray-600 bg-white" title="Nota de Exame Escrito">NEE</th>
+                    <th className="px-2 py-2 text-center border-r font-medium text-gray-600 bg-white" title="Nota de Exame Oral">NEO</th>
+                    <th className="px-2 py-2 text-center border-r font-medium text-gray-600 bg-gray-50" title="Média de Exame Nacional Combinado">MENC</th>
                   </>
                 )}
-                <th className="px-4 py-3 text-center border-l font-semibold text-gray-900 bg-gray-100">MFD</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-200 text-xs">
               {subjects.map((s: any) => (
                 <tr key={s.subject.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3 font-medium text-gray-900">
+                  <td className="px-4 py-3 font-medium text-gray-900 border-r">
                     {s.subject.name}
                   </td>
-                  <td className={`px-4 py-3 text-center border-l ${getGradeColorClass(s.terms.first.mt)}`}>
-                    {formatGrade(s.terms.first.mt)}
-                  </td>
-                  <td className={`px-4 py-3 text-center border-l ${getGradeColorClass(s.terms.second.mt)}`}>
-                    {formatGrade(s.terms.second.mt)}
-                  </td>
-                  <td className={`px-4 py-3 text-center border-l ${getGradeColorClass(s.terms.third.mt)}`}>
-                    {formatGrade(s.terms.third.mt)}
-                  </td>
+                  
+                  {/* T1 */}
+                  <td className={`px-2 py-3 text-center border-r ${getGradeColorClass(s.terms.first.mac)}`}>{formatGrade(s.terms.first.mac)}</td>
+                  <td className={`px-2 py-3 text-center border-r ${getGradeColorClass(s.terms.first.npt)}`}>{formatGrade(s.terms.first.npt)}</td>
+                  <td className={`px-2 py-3 text-center border-r font-semibold bg-gray-50 ${getGradeColorClass(s.terms.first.mt)}`}>{formatGrade(s.terms.first.mt)}</td>
+                  
+                  {/* T2 */}
+                  <td className={`px-2 py-3 text-center border-r ${getGradeColorClass(s.terms.second.mac)}`}>{formatGrade(s.terms.second.mac)}</td>
+                  <td className={`px-2 py-3 text-center border-r ${getGradeColorClass(s.terms.second.npt)}`}>{formatGrade(s.terms.second.npt)}</td>
+                  <td className={`px-2 py-3 text-center border-r font-semibold bg-gray-50 ${getGradeColorClass(s.terms.second.mt)}`}>{formatGrade(s.terms.second.mt)}</td>
+                  
+                  {/* T3 */}
+                  <td className={`px-2 py-3 text-center border-r ${getGradeColorClass(s.terms.third.mac)}`}>{formatGrade(s.terms.third.mac)}</td>
+                  <td className={`px-2 py-3 text-center border-r ${getGradeColorClass(s.terms.third.npt)}`}>{formatGrade(s.terms.third.npt)}</td>
+                  <td className={`px-2 py-3 text-center border-r font-semibold bg-gray-50 ${getGradeColorClass(s.terms.third.mt)}`}>{formatGrade(s.terms.third.mt)}</td>
                   
                   {isExamClass && (
                     <>
-                      <td className={`px-4 py-3 text-center border-l ${getGradeColorClass(s.final.nee)}`}>
+                      <td className={`px-2 py-3 text-center border-r ${getGradeColorClass(s.final.nee)}`}>
                         {formatGrade(s.final.nee)}
                       </td>
-                      <td className={`px-4 py-3 text-center border-l ${getGradeColorClass(s.final.neo)}`}>
+                      <td className={`px-2 py-3 text-center border-r ${getGradeColorClass(s.final.neo)}`}>
                         {formatGrade(s.final.neo)}
                       </td>
-                      <td className={`px-4 py-3 text-center border-l bg-gray-50 ${getGradeColorClass(s.final.menc)}`}>
+                      <td className={`px-2 py-3 text-center border-r font-semibold bg-gray-50 ${getGradeColorClass(s.final.menc)}`}>
                         {formatGrade(s.final.menc)}
                       </td>
                     </>
                   )}
                   
-                  <td className={`px-4 py-3 text-center border-l font-bold bg-gray-50 ${getGradeColorClass(s.final.mfd)}`}>
+                  <td className={`px-4 py-3 text-center border-l font-bold bg-gray-100 ${getGradeColorClass(s.final.mfd)}`}>
                     {formatGrade(s.final.mfd)}
                   </td>
                 </tr>

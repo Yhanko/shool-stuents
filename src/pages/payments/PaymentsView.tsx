@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useStudent } from '@/contexts/StudentContext';
 import { CreditCard, Download, Search, AlertTriangle, CheckCircle, Clock, Calendar, Receipt, Coins } from '../../lib/icons';
 import { studentService } from '@/services/api/studentService';
@@ -16,6 +16,8 @@ export function PaymentsView() {
   const { payments: contextPayments, student } = useStudent();
   const [payments, setPayments] = useState(contextPayments);
   const iban = (student as any)?.institution?.iban || "Não configurado pela instituição";
+  const multicaixaExpress = (student as any)?.institution?.multicaixaExpress || "Não configurado pela instituição";
+  const paymentReference = (student as any)?.institution?.paymentReference || "Não configurado pela instituição";
   
   // Sync with context
   useEffect(() => {
@@ -25,6 +27,12 @@ export function PaymentsView() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
+  const [isNewPayment, setIsNewPayment] = useState(false);
+  const [newPaymentData, setNewPaymentData] = useState({
+    type: 'tuition',
+    amount: '',
+    description: '',
+  });
   const [metodoPagamento, setMetodoPagamento] = useState('');
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -87,13 +95,17 @@ export function PaymentsView() {
     }
   };
 
-  const handlePaymentSubmit = async (paymentId: string) => {
+  const handlePaymentSubmit = async (paymentId?: string) => {
     if (!metodoPagamento) {
       toast.error('Selecione um método de pagamento');
       return;
     }
-    if (!proofFile && (metodoPagamento === 'transferencia' || metodoPagamento === 'multicaixa')) {
+    if (!proofFile && (metodoPagamento === 'transferencia' || metodoPagamento === 'multicaixa' || metodoPagamento === 'reference')) {
       toast.error('Anexe o comprovativo de pagamento');
+      return;
+    }
+    if (isNewPayment && (!newPaymentData.amount || !newPaymentData.description)) {
+      toast.error('Preencha o valor e a descrição do pagamento');
       return;
     }
 
@@ -105,17 +117,49 @@ export function PaymentsView() {
         fileUrl = uploadRes.path || uploadRes.url || '';
       }
       
+      let pId = paymentId;
+      if (isNewPayment) {
+        const newPayment = await studentService.createPayment({
+          studentId: student.id,
+          type: newPaymentData.type,
+          amount: Number(newPaymentData.amount),
+          description: newPaymentData.description,
+          dueDate: new Date().toISOString()
+        });
+        pId = newPayment.id;
+      }
+      
+      if (!pId) throw new Error("ID de pagamento não encontrado");
+
       // Chamar a API verdadeira para enviar comprovativo
-      await studentService.submitPaymentProof(paymentId, fileUrl, metodoPagamento);
+      await studentService.submitPaymentProof(pId, fileUrl, metodoPagamento);
       
-      toast.success('Comprovativo enviado! Aguarde a confirmação da secretaria.');
+      toast.success(isNewPayment ? 'Novo pagamento submetido com sucesso!' : 'Comprovativo enviado! Aguarde a confirmação da secretaria.');
+      
+      if (isNewPayment) {
+        const addedPayment = {
+          id: pId,
+          type: newPaymentData.type,
+          amount: Number(newPaymentData.amount),
+          description: newPaymentData.description,
+          status: 'processing',
+          proofUrl: fileUrl,
+          paymentMethod: metodoPagamento,
+          dueDate: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+        };
+        setPayments(prev => [addedPayment as any, ...prev]);
+      } else {
+        setPayments(prev => prev.map(p => 
+          p.id === pId ? { ...p, status: 'processing', proofUrl: fileUrl, paymentMethod: metodoPagamento } : p
+        ));
+      }
+
       setSelectedPayment(null);
+      setIsNewPayment(false);
       setProofFile(null);
-      
-      // Atualizar o state local para refletir que está em processamento
-      setPayments(prev => prev.map(p => 
-        p.id === paymentId ? { ...p, status: 'processing', proofUrl: fileUrl, paymentMethod: metodoPagamento } : p
-      ));
+      setMetodoPagamento('');
+      setNewPaymentData({ type: 'tuition', amount: '', description: '' });
 
     } catch (error) {
       toast.error('Erro ao enviar o pagamento.');
@@ -133,6 +177,9 @@ export function PaymentsView() {
           <h1 className="text-2xl font-bold text-gray-900">Pagamentos</h1>
           <p className="text-gray-600">Gerir propinas e outros pagamentos escolares</p>
         </div>
+        <Button onClick={() => setIsNewPayment(true)} className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm">
+          Fazer Pagamento
+        </Button>
       </div>
 
       {/* Summary Cards */}
@@ -207,7 +254,11 @@ export function PaymentsView() {
                       </div>
                       <div className="text-right">
                         <p className="font-bold text-red-900">KZ{payment.amount.toFixed(2)}</p>
-                        <Button size="sm" className="mt-1 bg-green-500 hover:bg-green-600">
+                        <Button 
+                          size="sm" 
+                          className="mt-1 bg-green-500 hover:bg-green-600"
+                          onClick={() => setSelectedPayment(payment.id)}
+                        >
                           Pagar Agora
                         </Button>
                       </div>
@@ -294,87 +345,9 @@ export function PaymentsView() {
                     </div>
                     <div className="flex flex-col gap-2">
                       {payment.status === 'pending' && (
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button size="sm" onClick={() => setSelectedPayment(payment.id)} className='bg-green-500 hover:bg-green-600'>
-                              Pagar
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Efetuar Pagamento</DialogTitle>
-                            </DialogHeader>
-                            <div className="space-y-4">
-                              <div className="p-4 bg-gray-50 rounded-lg">
-                                <h4 className="font-medium mb-2">{payment.description}</h4>
-                                <p className="text-2xl font-bold text-blue-600">{payment.amount.toFixed(2)}KZ</p>
-                                <p className="text-sm text-gray-600 mt-1">
-                                  Vencimento: {format(new Date(payment.dueDate), 'dd MMM, yyyy', { locale: ptBR })}
-                                </p>
-                              </div>
-                              <div className="space-y-3">
-                                <div>
-                                  <label className="text-sm font-medium text-gray-700">Método de Pagamento</label>
-                                  <Select value={metodoPagamento} onValueChange={setMetodoPagamento}>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Selecione o método" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="debit">Cartão de Débito</SelectItem>
-                                      <SelectItem value="transfer">Transferência Bancária</SelectItem>
-                                      <SelectItem value="mbway">Multicaixa express</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                                {metodoPagamento === 'multicaixa' && (
-                                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                                  <h4 className="font-medium text-blue-800 mb-2">Pagamento via Multicaixa</h4>
-                                  <p className="text-sm text-blue-700 mb-3">
-                                      Transfira o valor para o IBAN da Instituição:
-                                  </p>
-                                  <div className="bg-white p-3 rounded border text-center">
-                                    <span className="font-mono text-lg font-bold">{iban}</span>
-                                  </div>
-                                  </div>
-                                )}
-
-                                {metodoPagamento === 'transferencia' && (
-                                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                                    <h4 className="font-medium text-green-800 mb-2">Dados para Transferência</h4>
-                                    <div className="space-y-2 text-sm">
-                                      <div><strong>IBAN da Instituição:</strong> {iban}</div>
-                                      <div className="text-gray-600 italic">Por favor, faça a transferência para este IBAN e anexe o comprovativo abaixo.</div>
-                                    </div>
-                                  </div>
-                                )}
-                                
-                                <div className="space-y-2">
-                                  <label className="text-sm font-medium text-gray-700">Comprovativo (PDF/Imagem)</label>
-                                  <div className="flex items-center gap-2">
-                                    <Input 
-                                      type="file" 
-                                      accept=".pdf,image/*" 
-                                      onChange={(e) => setProofFile(e.target.files?.[0] || null)}
-                                    />
-                                  </div>
-                                </div>
-
-                                <div className="flex gap-3">
-                                  <Button 
-                                    className="flex-1 bg-green-500 hover:bg-green-600" 
-                                    disabled={!metodoPagamento || isSubmitting}
-                                    onClick={() => handlePaymentSubmit(payment.id)}
-                                  >
-                                    {isSubmitting ? 'A Enviar...' : 'Confirmar Pagamento'}
-                                  </Button>
-                                  <Button variant="outline" onClick={() => setSelectedPayment(null)}>
-                                    Cancelar
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          </DialogContent>
-                        </Dialog>
+                        <Button size="sm" onClick={() => setSelectedPayment(payment.id)} className='bg-green-500 hover:bg-green-600'>
+                          Pagar
+                        </Button>
                       )}
                       {payment.status === 'paid' && (
                         <Button variant="outline" size="sm">
@@ -390,6 +363,156 @@ export function PaymentsView() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Global Payment Modal */}
+      {(selectedPayment || isNewPayment) && (
+        <Dialog 
+          open={!!selectedPayment || isNewPayment} 
+          onOpenChange={(open) => {
+            if (!open) {
+              setSelectedPayment(null);
+              setIsNewPayment(false);
+            }
+          }}
+        >
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{isNewPayment ? 'Fazer Novo Pagamento' : 'Efetuar Pagamento'}</DialogTitle>
+            </DialogHeader>
+            {(() => {
+              const paymentToPay = isNewPayment ? null : payments.find(p => p.id === selectedPayment);
+              if (!isNewPayment && !paymentToPay) return null;
+              
+              return (
+                <div className="space-y-4">
+                  {!isNewPayment ? (
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <h4 className="font-medium mb-2">{paymentToPay?.description}</h4>
+                      <p className="text-2xl font-bold text-blue-600">{paymentToPay?.amount.toFixed(2)}KZ</p>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Vencimento: {paymentToPay?.dueDate && format(new Date(paymentToPay.dueDate), 'dd MMM, yyyy', { locale: ptBR })}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3 p-4 bg-gray-50 rounded-lg border">
+                      <div>
+                        <label className="text-sm font-medium text-gray-700">Tipo de Pagamento</label>
+                        <Select value={newPaymentData.type} onValueChange={(v) => setNewPaymentData({...newPaymentData, type: v})}>
+                          <SelectTrigger className="bg-white">
+                            <SelectValue placeholder="Selecione o tipo" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="tuition">Propina</SelectItem>
+                            <SelectItem value="fee">Taxa Administrativa</SelectItem>
+                            <SelectItem value="material">Material Escolar</SelectItem>
+                            <SelectItem value="transport">Transporte</SelectItem>
+                            <SelectItem value="other">Outro</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-700">Descrição (Mês a pagar, Exame, etc.)</label>
+                        <Input 
+                          placeholder="Ex: Propina de Maio" 
+                          value={newPaymentData.description}
+                          onChange={e => setNewPaymentData({...newPaymentData, description: e.target.value})}
+                          className="bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-700">Valor (KZ)</label>
+                        <Input 
+                          type="number"
+                          placeholder="Ex: 5000" 
+                          value={newPaymentData.amount}
+                          onChange={e => setNewPaymentData({...newPaymentData, amount: e.target.value})}
+                          className="bg-white"
+                          min="0"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">Método de Pagamento</label>
+                      <Select value={metodoPagamento} onValueChange={setMetodoPagamento}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o método" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="debit">Cartão de Débito</SelectItem>
+                          <SelectItem value="transferencia">Transferência Bancária</SelectItem>
+                          <SelectItem value="multicaixa">Multicaixa express</SelectItem>
+                          <SelectItem value="reference">Pagamento por Referência</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {metodoPagamento === 'multicaixa' && (
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <h4 className="font-medium text-blue-800 mb-2">Pagamento via Multicaixa Express</h4>
+                      <p className="text-sm text-blue-700 mb-3">
+                          Transfira o valor para o Número da Instituição:
+                      </p>
+                      <div className="bg-white p-3 rounded border text-center">
+                        <span className="font-mono text-lg font-bold">{multicaixaExpress}</span>
+                      </div>
+                      </div>
+                    )}
+
+                    {metodoPagamento === 'reference' && (
+                      <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                        <h4 className="font-medium text-purple-800 mb-2">Pagamento por Referência</h4>
+                        <div className="space-y-2 text-sm text-purple-900">
+                          <div className="font-medium whitespace-pre-wrap">{paymentReference}</div>
+                          <div className="text-purple-700 italic">Por favor, efetue o pagamento usando a referência e anexe o comprovativo abaixo.</div>
+                        </div>
+                      </div>
+                    )}
+
+                    {metodoPagamento === 'transferencia' && (
+                      <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <h4 className="font-medium text-green-800 mb-2">Dados para Transferência</h4>
+                        <div className="space-y-2 text-sm">
+                          <div><strong>IBAN da Instituição:</strong> {iban}</div>
+                          <div className="text-gray-600 italic">Por favor, faça a transferência para este IBAN e anexe o comprovativo abaixo.</div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">Comprovativo (PDF/Imagem)</label>
+                      <div className="flex items-center gap-2">
+                        <Input 
+                          type="file" 
+                          accept=".pdf,image/*" 
+                          onChange={(e) => setProofFile(e.target.files?.[0] || null)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <Button 
+                        className="flex-1 bg-green-500 hover:bg-green-600" 
+                        disabled={!metodoPagamento || isSubmitting}
+                        onClick={() => handlePaymentSubmit(paymentToPay?.id)}
+                      >
+                        {isSubmitting ? 'A Enviar...' : (isNewPayment ? 'Confirmar Novo Pagamento' : 'Confirmar Pagamento')}
+                      </Button>
+                      <Button variant="outline" onClick={() => {
+                        setSelectedPayment(null);
+                        setIsNewPayment(false);
+                      }}>
+                        Cancelar
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

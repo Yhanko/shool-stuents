@@ -14,6 +14,7 @@ interface StudentContextType {
   notifications: Notification[];
   attendances: Attendance[];
   pautaData: any;
+  contacts: any[];
   unreadMessages: number;
   unreadNotifications: number;
   markMessageAsRead: (messageId: string) => void;
@@ -36,6 +37,7 @@ export function StudentProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [attendances, setAttendances] = useState<Attendance[]>([]);
   const [pautaData, setPautaData] = useState<any>(null);
+  const [contacts, setContacts] = useState<any[]>([]);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -83,6 +85,7 @@ export function StudentProvider({ children }: { children: ReactNode }) {
         setNotifications(fetchedNotifications || []);
         
         if (fetchedContacts && fetchedContacts.length > 0) {
+          setContacts(fetchedContacts);
           const totalUnread = fetchedContacts.reduce((acc: number, contact: any) => acc + (contact.naoLidas > 0 ? 1 : 0), 0);
           setUnreadMessagesCount(totalUnread);
         }
@@ -175,6 +178,7 @@ export function StudentProvider({ children }: { children: ReactNode }) {
       notifications,
       attendances,
       pautaData,
+      contacts,
       unreadMessages,
       unreadNotifications,
       markMessageAsRead,
