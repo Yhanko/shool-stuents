@@ -151,7 +151,7 @@ export function Sidebar({ currentPage, onPageChange, isMobileOpen, onMobileClose
           <div className="p-4 border-t border-border bg-card">
             {!isCollapsed && (
               <div className="text-center mb-4">
-                <p className="text-xs text-muted-foreground label-caps uppercase tracking-wider">Ano Letivo</p>
+                <p className="text-xs text-muted-foreground label-caps uppercase tracking-wider">Turno</p>
                 <p className="text-sm font-medium text-foreground mt-1 data-mono">{student.year}</p>
               </div>
             )}
