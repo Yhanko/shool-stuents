@@ -196,7 +196,7 @@ export function MessagesView () {
             <MessageCircle className="mr-3 h-8 w-8" />
             Mensagens
           </h1>
-          <p className="text-muted-foreground">Comunicação direta com professores, colegas e direção</p>
+          <p className="text-muted-foreground">Comunicação direta com professores e direção</p>
         </div>
       </div>
 
