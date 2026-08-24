@@ -142,7 +142,6 @@ export function MessagesView () {
       case 'admin':
       case 'super_admin': return 'Direção';
       case 'secretary': return 'Secretaria';
-      case 'student': return 'Colega';
       case 'parent': return 'Encarregado';
       default: return 'Escola';
     }
