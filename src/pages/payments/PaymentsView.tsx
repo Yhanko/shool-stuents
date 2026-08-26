@@ -38,26 +38,39 @@ export function PaymentsView() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const filteredPayments = payments.filter(payment => {
-    const searchMatch = payment.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const statusMatch = statusFilter === 'all' || payment.status === statusFilter;
+    const searchMatch = payment.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    const pStatus = payment.status?.toLowerCase() || '';
+    
+    let statusMatch = true;
+    if (statusFilter === 'pending') {
+      statusMatch = pStatus === 'pending' && new Date(payment.dueDate) >= new Date();
+    } else if (statusFilter === 'paid') {
+      statusMatch = pStatus === 'paid' || pStatus === 'confirmed';
+    } else if (statusFilter === 'overdue') {
+      statusMatch = pStatus === 'pending' && new Date(payment.dueDate) < new Date();
+    } else if (statusFilter !== 'all') {
+      statusMatch = pStatus === statusFilter;
+    }
+    
     return searchMatch && statusMatch;
   });
 
   const totalPending = payments
-    .filter(p => p.status === 'pending')
-    .reduce((acc, p) => acc + p.amount, 0);
+    .filter(p => p.status?.toLowerCase() === 'pending' && new Date(p.dueDate) >= new Date())
+    .reduce((acc, p) => acc + Number(p.amount || 0), 0);
 
   const totalPaid = payments
-    .filter(p => p.status === 'paid')
-    .reduce((acc, p) => acc + p.amount, 0);
+    .filter(p => p.status?.toLowerCase() === 'paid' || p.status?.toLowerCase() === 'confirmed')
+    .reduce((acc, p) => acc + Number(p.amount || 0), 0);
 
   const overduePayments = payments.filter(p => 
-    p.status === 'pending' && new Date(p.dueDate) < new Date()
+    p.status?.toLowerCase() === 'pending' && new Date(p.dueDate) < new Date()
   );
 
   const getStatusIcon = (status: string) => {
-    switch (status) {
+    switch (status?.toLowerCase()) {
       case 'paid':
+      case 'confirmed':
         return <CheckCircle className="w-4 h-4 text-green-600" />;
       case 'processing':
         return <Clock className="w-4 h-4 text-blue-600" />;
@@ -71,12 +84,32 @@ export function PaymentsView() {
   };
 
   const getStatusBadge = (status: string, dueDate: string) => {
-    if (status === 'paid') return <Badge variant="default" className="bg-green-500 hover:bg-green-600 text-white">Pago</Badge>;
-    if (status === 'processing') return <Badge variant="secondary" className="bg-blue-100 text-blue-800">Em Validação</Badge>;
-    if (status === 'pending' && new Date(dueDate) < new Date()) {
-      return <Badge variant="destructive">Em Atraso</Badge>;
+    const s = status?.toLowerCase();
+    if (s === 'paid' || s === 'confirmed') return (
+      <Badge className="bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-sm shadow-green-200 border-0 px-3 py-1 font-semibold tracking-wide">
+        ✓ Pago
+      </Badge>
+    );
+    if (s === 'processing') return (
+      <Badge className="bg-gradient-to-r from-sky-400 to-blue-500 text-white shadow-sm shadow-blue-200 border-0 px-3 py-1 font-semibold tracking-wide animate-pulse">
+        ⏳ Em Validação
+      </Badge>
+    );
+    if (s === 'pending' && new Date(dueDate) < new Date()) {
+      return (
+        <Badge
+          style={{ backgroundColor: '#dc2626', color: '#ffffff', border: 'none' }}
+          className="px-3 py-1 font-semibold"
+        >
+          Em Atraso
+        </Badge>
+      );
     }
-    if (status === 'pending') return <Badge variant="secondary">Pendente</Badge>;
+    if (s === 'pending') return (
+      <Badge className="bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-sm shadow-orange-200 border-0 px-3 py-1 font-semibold tracking-wide">
+        ◷ Pendente
+      </Badge>
+    );
     return <Badge variant="outline">{status}</Badge>;
   };
 
@@ -256,10 +289,10 @@ export function PaymentsView() {
                         <p className="font-bold text-red-900">KZ{payment.amount.toFixed(2)}</p>
                         <Button 
                           size="sm" 
-                          className="mt-1 bg-green-500 hover:bg-green-600"
+                          className="mt-1 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-semibold shadow-md shadow-green-200 border-0 transition-all duration-200 hover:shadow-lg hover:scale-105"
                           onClick={() => setSelectedPayment(payment.id)}
                         >
-                          Pagar Agora
+                          💳 Pagar Agora
                         </Button>
                       </div>
                     </div>
@@ -303,7 +336,8 @@ export function PaymentsView() {
         <CardContent>
           <div className="space-y-4">
             {filteredPayments.map(payment => {
-              const isOverdue = payment.status === 'pending' && new Date(payment.dueDate) < new Date();
+              const pStatus = payment.status?.toLowerCase();
+              const isOverdue = pStatus === 'pending' && new Date(payment.dueDate) < new Date();
               
               return (
                 <div key={payment.id} className={`p-4 rounded-lg border transition-all hover:shadow-md ${
@@ -312,7 +346,7 @@ export function PaymentsView() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-start gap-4">
                       <div className={`p-2 rounded-lg ${
-                        payment.status === 'paid' ? 'bg-green-100' :
+                        pStatus === 'paid' || pStatus === 'confirmed' ? 'bg-green-100' :
                         isOverdue ? 'bg-red-100' : 'bg-orange-100'
                       }`}>
                         {getStatusIcon(payment.status)}
@@ -344,13 +378,25 @@ export function PaymentsView() {
                       </div>
                     </div>
                     <div className="flex flex-col gap-2">
-                      {payment.status === 'pending' && (
-                        <Button size="sm" onClick={() => setSelectedPayment(payment.id)} className='bg-green-500 hover:bg-green-600'>
-                          Pagar
+                      {pStatus === 'pending' && (
+                        <Button
+                          size="sm"
+                          onClick={() => setSelectedPayment(payment.id)}
+                          className={`font-semibold shadow-md border-0 transition-all duration-200 hover:shadow-lg hover:scale-105 ${
+                            isOverdue
+                              ? 'bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 text-white shadow-red-200'
+                              : 'bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white shadow-green-200'
+                          }`}
+                        >
+                          💳 Pagar
                         </Button>
                       )}
-                      {payment.status === 'paid' && (
-                        <Button variant="outline" size="sm">
+                      {(pStatus === 'paid' || pStatus === 'confirmed') && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-emerald-300 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-400 font-medium transition-all duration-200"
+                        >
                           <Download className="w-4 h-4 mr-2" />
                           Recibo
                         </Button>
@@ -493,16 +539,21 @@ export function PaymentsView() {
 
                     <div className="flex gap-3">
                       <Button 
-                        className="flex-1 bg-green-500 hover:bg-green-600" 
+                        style={{ backgroundColor: '#ffffff', color: '#16a34a', border: '1.5px solid #16a34a' }}
+                        className="flex-1 font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                         disabled={!metodoPagamento || isSubmitting}
                         onClick={() => handlePaymentSubmit(paymentToPay?.id)}
                       >
-                        {isSubmitting ? 'A Enviar...' : (isNewPayment ? 'Confirmar Novo Pagamento' : 'Confirmar Pagamento')}
+                        {isSubmitting ? 'A Enviar...' : (isNewPayment ? 'Confirmar Pagamento' : 'Confirmar Pagamento')}
                       </Button>
-                      <Button variant="outline" onClick={() => {
-                        setSelectedPayment(null);
-                        setIsNewPayment(false);
-                      }}>
+                      <Button
+                        variant="outline"
+                        className="border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400 font-medium transition-all duration-200"
+                        onClick={() => {
+                          setSelectedPayment(null);
+                          setIsNewPayment(false);
+                        }}
+                      >
                         Cancelar
                       </Button>
                     </div>
