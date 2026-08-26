@@ -201,7 +201,62 @@ export function PaymentsView() {
     }
   };
 
-  payments.find(p => p.id === selectedPayment);
+  const handleDownloadReceipt = (payment: any) => {
+    const receiptHtml = `
+      <html>
+        <head>
+          <title>Recibo - ${payment.description}</title>
+          <style>
+            body { font-family: sans-serif; padding: 40px; color: #333; }
+            .header { text-align: center; border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 30px; }
+            .title { font-size: 24px; font-weight: bold; margin-bottom: 5px; }
+            .subtitle { font-size: 14px; color: #666; }
+            .details { margin-bottom: 30px; }
+            .row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f5f5f5; }
+            .label { font-weight: bold; color: #555; }
+            .total { font-size: 18px; font-weight: bold; margin-top: 20px; padding-top: 20px; border-top: 2px solid #eee; text-align: right; }
+            .footer { margin-top: 50px; text-align: center; font-size: 12px; color: #999; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="title">Recibo de Pagamento</div>
+            <div class="subtitle">Data de emissão: ${format(new Date(), 'dd/MM/yyyy HH:mm')}</div>
+          </div>
+          
+          <div class="details">
+            <div class="row"><span class="label">Aluno:</span> <span>${student?.name || 'N/A'}</span></div>
+            <div class="row"><span class="label">Descrição:</span> <span>${payment.description}</span></div>
+            <div class="row"><span class="label">Tipo:</span> <span>${getPaymentTypeLabel(payment.type)}</span></div>
+            <div class="row"><span class="label">Data de Pagamento:</span> <span>${payment.paidDate ? format(new Date(payment.paidDate), 'dd/MM/yyyy') : format(new Date(payment.updatedAt || payment.createdAt || new Date()), 'dd/MM/yyyy')}</span></div>
+            <div class="row"><span class="label">Método:</span> <span>${payment.paymentMethod || 'N/A'}</span></div>
+            <div class="row"><span class="label">Estado:</span> <span>Pago</span></div>
+          </div>
+          
+          <div class="total">
+            Total Pago: KZ ${Number(payment.amount).toFixed(2)}
+          </div>
+          
+          <div class="footer">
+            Este é um documento gerado automaticamente pelo portal do estudante.
+          </div>
+          
+          <script>
+            window.onload = function() { window.print(); }
+          </script>
+        </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    if (printWindow) {
+      printWindow.document.open();
+      printWindow.document.write(receiptHtml);
+      printWindow.document.close();
+    } else {
+      toast.error("Por favor, permita pop-ups para imprimir o recibo.");
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -395,6 +450,7 @@ export function PaymentsView() {
                         <Button
                           variant="outline"
                           size="sm"
+                          onClick={() => handleDownloadReceipt(payment)}
                           className="border-emerald-300 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-400 font-medium transition-all duration-200"
                         >
                           <Download className="w-4 h-4 mr-2" />
